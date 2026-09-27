@@ -3,10 +3,7 @@ package com.seaofmemory.client.entity;
 import com.seaofmemory.SeaOfMemory;
 import com.seaofmemory.entity.ModEntities;
 
-import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelLayerLocation;
-import net.minecraft.client.model.geom.builders.CubeDeformation;
-import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -27,7 +24,7 @@ public final class ModEntityRenderers {
 
     @SubscribeEvent
     static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
-        event.registerLayerDefinition(SNOW_PERSON, () -> LayerDefinition.create(HumanoidModel.createMesh(CubeDeformation.NONE, 0), 64, 32));
+        event.registerLayerDefinition(SNOW_PERSON, SnowPersonModel::createBodyLayer);
         event.registerLayerDefinition(PLUSH_HARE, PlushHareModel::createBodyLayer);
     }
 
