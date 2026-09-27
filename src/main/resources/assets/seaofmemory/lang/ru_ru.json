@@ -21,5 +21,7 @@
   "commands.seaofmemory.fog.release": "Туман отпустил игрока %s",
   "commands.seaofmemory.fog.release.failed": "Игрок %s не в тумане",
   "seaofmemory.configuration.absorptionSeconds": "Время поглощения",
-  "itemGroup.seaofmemory": "Море Памяти"
+  "itemGroup.seaofmemory": "Море Памяти",
+  "commands.seaofmemory.silhouette.on": "Силуэтная сцена включена для игроков: %s",
+  "commands.seaofmemory.silhouette.off": "Силуэтная сцена выключена для игроков: %s"
 }

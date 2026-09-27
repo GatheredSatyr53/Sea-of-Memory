@@ -21,5 +21,7 @@
   "commands.seaofmemory.fog.release": "The fog let %s go",
   "commands.seaofmemory.fog.release.failed": "%s is not in the fog",
   "seaofmemory.configuration.absorptionSeconds": "Absorption Time",
-  "itemGroup.seaofmemory": "Sea of Memory"
+  "itemGroup.seaofmemory": "Sea of Memory",
+  "commands.seaofmemory.silhouette.on": "Silhouette scene shown to %s players",
+  "commands.seaofmemory.silhouette.off": "Silhouette scene stopped for %s players"
 }
