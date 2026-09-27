@@ -162,7 +162,7 @@ public class PlushHare extends Monster {
     private void transform(ServerLevel level) {
         entityData.set(DATA_TRANSFORMED, true);
         applyTransformedStats();
-        bossEvent.setColor(BossEvent.BossBarColor.RED);
+        markSceneOnBossBar();
 
         level.playSound(null, blockPosition(), SoundEvents.WOOL_BREAK, SoundSource.HOSTILE, 2f, 0.5f);
         level.playSound(null, blockPosition(), SoundEvents.SPIDER_AMBIENT, SoundSource.HOSTILE, 2f, 0.4f);
@@ -192,6 +192,15 @@ public class PlushHare extends Monster {
             }
         }
         scenePlayers.clear();
+    }
+
+    /**
+     * A red bar that thickens the fog. The fog flag is also how a shaderpack learns the scene is on:
+     * Iris exposes it to shaders as the {@code heavyFog} uniform.
+     */
+    private void markSceneOnBossBar() {
+        bossEvent.setColor(BossEvent.BossBarColor.RED);
+        bossEvent.setCreateWorldFog(true);
     }
 
     private void applyTransformedStats() {
@@ -276,7 +285,7 @@ public class PlushHare extends Monster {
         if (input.getBooleanOr("Transformed", false)) {
             entityData.set(DATA_TRANSFORMED, true);
             applyTransformedStats();
-            bossEvent.setColor(BossEvent.BossBarColor.RED);
+            markSceneOnBossBar();
         }
         bossEvent.setName(getDisplayName());
     }

@@ -58,6 +58,10 @@ public final class SilhouetteEffect {
         if (remaining == SilhouettePayload.OFF || minecraft.level == null || !FogWorld.is(minecraft.level)) {
             return;
         }
+        // With a shaderpack the scene is the pack's job (see Sea-of-Memory-Shaders); two effects on top of each other fight.
+        if (ShaderPacks.inUse()) {
+            return;
+        }
         PostChain chain = minecraft.getShaderManager().getPostChain(EFFECT, LevelTargetBundle.MAIN_TARGETS);
         if (chain != null) {
             chain.process(minecraft.gameRenderer.mainRenderTarget(), RESOURCES);

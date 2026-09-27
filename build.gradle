@@ -27,6 +27,13 @@ sourceSets.main.resources {
 
 repositories {
     // Add here additional repositories if required by some of the dependencies below.
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content {
+            includeGroup "maven.modrinth"
+        }
+    }
 }
 
 base {
@@ -64,6 +71,9 @@ runs {
     client {
         // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
         systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        // The dev-only GL draw validation assumes every pipeline describes all 16 vertex buffer slots;
+        // Iris' pipelines describe one, so validation crashes the dev client (players never run it).
+        systemProperty 'neoforge.disableGlValidation', 'true'
     }
 
     server {
@@ -103,6 +113,11 @@ dependencies {
     // And its provides the option to then use net.minecraft as the group, and one of; client, server or joined as the module name, plus the game version as version.
     // For all intends and purposes: You can treat this dependency as if it is a normal library you would use.
     implementation "net.neoforged:neoforge:${neo_version}"
+
+    // Iris and Sodium, only to develop the companion shaderpack (Sea-of-Memory-Shaders) in the dev client.
+    // localRuntime keeps them out of the published mod's dependencies.
+    localRuntime "maven.modrinth:sodium:${sodium_version}"
+    localRuntime "maven.modrinth:iris:${iris_version}"
 
     // Example optional mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
