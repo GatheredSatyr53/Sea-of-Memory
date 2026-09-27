@@ -3,6 +3,7 @@ package com.seaofmemory.client;
 import com.mojang.blaze3d.resource.CrossFrameResourcePool;
 import com.seaofmemory.SeaOfMemory;
 import com.seaofmemory.scene.SilhouettePayload;
+import com.seaofmemory.sea.FogWorld;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelTargetBundle;
@@ -51,10 +52,12 @@ public final class SilhouetteEffect {
 
     @SubscribeEvent
     static void onAfterLevel(RenderLevelStageEvent.AfterLevel event) {
-        if (remaining == SilhouettePayload.OFF) {
+        Minecraft minecraft = Minecraft.getInstance();
+        // A scene can stay on for a long time, but it only shows in the fog reality:
+        // in the real world it would switch on and off at every edge of a foggy chunk.
+        if (remaining == SilhouettePayload.OFF || minecraft.level == null || !FogWorld.is(minecraft.level)) {
             return;
         }
-        Minecraft minecraft = Minecraft.getInstance();
         PostChain chain = minecraft.getShaderManager().getPostChain(EFFECT, LevelTargetBundle.MAIN_TARGETS);
         if (chain != null) {
             chain.process(minecraft.gameRenderer.mainRenderTarget(), RESOURCES);

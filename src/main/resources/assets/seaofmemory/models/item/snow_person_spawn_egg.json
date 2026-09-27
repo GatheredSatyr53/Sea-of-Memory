@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "seaofmemory:item/snow_person_spawn_egg"
+  }
+}

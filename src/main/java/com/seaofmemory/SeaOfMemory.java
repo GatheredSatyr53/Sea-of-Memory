@@ -6,6 +6,7 @@ import com.mojang.logging.LogUtils;
 import com.mojang.serialization.MapCodec;
 import com.seaofmemory.beacon.FogBeaconBlock;
 import com.seaofmemory.cold.Cold;
+import com.seaofmemory.entity.ModEntities;
 import com.seaofmemory.fog.CognitiveFog;
 import com.seaofmemory.sea.Absorption;
 import com.seaofmemory.sea.MemoryDensityFunction;
@@ -64,6 +65,7 @@ public class SeaOfMemory {
         CognitiveFog.ATTACHMENT_TYPES.register(modEventBus);
         Cold.ATTACHMENT_TYPES.register(modEventBus);
         Absorption.ATTACHMENT_TYPES.register(modEventBus);
+        ModEntities.ENTITY_TYPES.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.SERVER, Config.SPEC);
     }

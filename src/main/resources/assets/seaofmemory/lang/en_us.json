@@ -23,5 +23,10 @@
   "seaofmemory.configuration.absorptionSeconds": "Absorption Time",
   "itemGroup.seaofmemory": "Sea of Memory",
   "commands.seaofmemory.silhouette.on": "Silhouette scene shown to %s players",
-  "commands.seaofmemory.silhouette.off": "Silhouette scene stopped for %s players"
+  "commands.seaofmemory.silhouette.off": "Silhouette scene stopped for %s players",
+  "entity.seaofmemory.snow_person": "Snow Person",
+  "entity.seaofmemory.plush_hare": "Plush Hare",
+  "item.seaofmemory.snow_person_spawn_egg": "Snow Person Spawn Egg",
+  "item.seaofmemory.plush_hare_spawn_egg": "Plush Hare Spawn Egg",
+  "item.seaofmemory.button_eye": "Button Eye"
 }

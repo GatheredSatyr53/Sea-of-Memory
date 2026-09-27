@@ -1,0 +1,239 @@
+package com.seaofmemory.entity;
+
+import com.seaofmemory.cold.Cold;
+import com.seaofmemory.fog.CognitiveFog;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.goal.FloatGoal;
+import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
+import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
+import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
+import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
+import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.entity.ai.navigation.PathNavigation;
+import net.minecraft.world.entity.ai.navigation.WallClimberNavigation;
+
+import java.util.EnumSet;
+
+/**
+ * "Снежные люди" from "Огонёк": pale, faceless figures moulded out of wet snow and someone's grief.
+ * They drift towards light, warmth and noise, crawl over walls and roofs, and their blank stare
+ * alone makes a person colder. They melt away once the fog thins out.
+ */
+public class SnowPerson extends Monster {
+    private static final EntityDataAccessor<Boolean> DATA_CLIMBING = SynchedEntityData.defineId(SnowPerson.class, EntityDataSerializers.BOOLEAN);
+
+    // Below this fog density they start to melt; the fog world (0.6) keeps them whole.
+    private static final float MELT_BELOW = 0.55f;
+    private static final float MELT_DAMAGE = 2f;
+    private static final double GAZE_RANGE = 12;
+    private static final float GAZE_COLD = 0.4f;
+    private static final float HIT_COLD = 8f;
+    // How long they keep heading for a light or a noise before losing interest.
+    private static final int LURE_TICKS = 400;
+    private static final int LIGHT_SCAN_RADIUS = 16;
+    private static final int LIGHT_SCAN_SAMPLES = 16;
+    private static final int ATTRACTIVE_LIGHT = 10;
+
+    private BlockPos lure;
+    private int lureTicks;
+
+    public SnowPerson(EntityType<? extends SnowPerson> type, Level level) {
+        super(type, level);
+    }
+
+    public static AttributeSupplier.Builder createAttributes() {
+        return Monster.createMonsterAttributes()
+                .add(Attributes.MAX_HEALTH, 14)
+                .add(Attributes.MOVEMENT_SPEED, 0.2)
+                .add(Attributes.ATTACK_DAMAGE, 2)
+                .add(Attributes.FOLLOW_RANGE, 32);
+    }
+
+    @Override
+    protected void registerGoals() {
+        goalSelector.addGoal(0, new FloatGoal(this));
+        goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.1, false));
+        goalSelector.addGoal(3, new FollowLureGoal(this));
+        goalSelector.addGoal(6, new WaterAvoidingRandomStrollGoal(this, 0.6));
+        goalSelector.addGoal(7, new LookAtPlayerGoal(this, Player.class, (float) GAZE_RANGE));
+        targetSelector.addGoal(1, new HurtByTargetGoal(this).setAlertOthers());
+        targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true));
+    }
+
+    @Override
+    protected PathNavigation createNavigation(Level level) {
+        return new WallClimberNavigation(this, level);
+    }
+
+    @Override
+    protected void defineSynchedData(SynchedEntityData.Builder entityData) {
+        super.defineSynchedData(entityData);
+        entityData.define(DATA_CLIMBING, false);
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (!level().isClientSide()) {
+            entityData.set(DATA_CLIMBING, horizontalCollision);
+        }
+    }
+
+    @Override
+    public boolean onClimbable() {
+        return entityData.get(DATA_CLIMBING);
+    }
+
+    /**
+     * Draws this one towards a light or a noise at the given position.
+     */
+    public void lure(BlockPos pos) {
+        lure = pos.immutable();
+        lureTicks = LURE_TICKS;
+    }
+
+    @Override
+    protected void customServerAiStep(ServerLevel level) {
+        super.customServerAiStep(level);
+        if (lureTicks > 0 && --lureTicks == 0) {
+            lure = null;
+        }
+        if (tickCount % 40 == 0 && lure == null && getTarget() == null) {
+            seekLight(level);
+        }
+        if (tickCount % 20 == 0) {
+            stare(level);
+            meltIfFogThins(level);
+        }
+    }
+
+    /**
+     * They go towards light the way the frozen go towards a stove.
+     */
+    private void seekLight(ServerLevel level) {
+        BlockPos brightest = null;
+        int brightestLight = ATTRACTIVE_LIGHT - 1;
+        for (int i = 0; i < LIGHT_SCAN_SAMPLES; i++) {
+            BlockPos pos = blockPosition().offset(
+                    random.nextIntBetweenInclusive(-LIGHT_SCAN_RADIUS, LIGHT_SCAN_RADIUS),
+                    random.nextIntBetweenInclusive(-4, 4),
+                    random.nextIntBetweenInclusive(-LIGHT_SCAN_RADIUS, LIGHT_SCAN_RADIUS));
+            int light = level.getBrightness(LightLayer.BLOCK, pos);
+            if (light > brightestLight) {
+                brightest = pos;
+                brightestLight = light;
+            }
+        }
+        if (brightest != null) {
+            lure(brightest);
+        }
+    }
+
+    /**
+     * Being looked at by one of them is enough to feel the cold.
+     */
+    private void stare(ServerLevel level) {
+        Player player = level.getNearestPlayer(this, GAZE_RANGE);
+        if (player != null && !player.isCreative() && !player.isSpectator() && hasLineOfSight(player)) {
+            Cold.set(player, Cold.get(player) + GAZE_COLD);
+        }
+    }
+
+    private void meltIfFogThins(ServerLevel level) {
+        if (CognitiveFog.densityAt(level, blockPosition()) < MELT_BELOW) {
+            level.sendParticles(ParticleTypes.FALLING_WATER, getX(), getY() + getBbHeight() * 0.6, getZ(), 6, 0.3, 0.5, 0.3, 0);
+            hurtServer(level, damageSources().generic(), MELT_DAMAGE);
+        }
+    }
+
+    @Override
+    public boolean doHurtTarget(ServerLevel level, Entity target) {
+        boolean hit = super.doHurtTarget(level, target);
+        if (hit && target instanceof Player player) {
+            Cold.set(player, Cold.get(player) + HIT_COLD);
+        }
+        return hit;
+    }
+
+    @Override
+    public void die(DamageSource source) {
+        super.die(source);
+        if (level() instanceof ServerLevel level) {
+            // Falls apart like wet cotton wool, without a sound of its own.
+            level.sendParticles(ParticleTypes.SNOWFLAKE, getX(), getY() + getBbHeight() / 2, getZ(), 40, 0.3, 0.6, 0.3, 0.05);
+        }
+    }
+
+    @Override
+    protected SoundEvent getAmbientSound() {
+        return null;
+    }
+
+    @Override
+    protected SoundEvent getHurtSound(DamageSource source) {
+        return SoundEvents.SNOW_HIT;
+    }
+
+    @Override
+    protected SoundEvent getDeathSound() {
+        return SoundEvents.SNOW_BREAK;
+    }
+
+    @Override
+    protected void playStepSound(BlockPos pos, BlockState state) {
+        playSound(SoundEvents.SNOW_STEP, 0.3f, 0.8f);
+    }
+
+    /**
+     * Walks towards the current lure, then stands there staring until it loses interest.
+     */
+    private static final class FollowLureGoal extends Goal {
+        private final SnowPerson mob;
+
+        FollowLureGoal(SnowPerson mob) {
+            this.mob = mob;
+            setFlags(EnumSet.of(Flag.MOVE));
+        }
+
+        @Override
+        public boolean canUse() {
+            return mob.lure != null && mob.getTarget() == null;
+        }
+
+        @Override
+        public void tick() {
+            if (mob.lure != null && mob.tickCount % 10 == 0 && mob.blockPosition().distSqr(mob.lure) > 4) {
+                mob.getNavigation().moveTo(mob.lure.getX() + 0.5, mob.lure.getY(), mob.lure.getZ() + 0.5, 0.9);
+            }
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return canUse();
+        }
+
+        @Override
+        public void stop() {
+            mob.getNavigation().stop();
+        }
+    }
+}

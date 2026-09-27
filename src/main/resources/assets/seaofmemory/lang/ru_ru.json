@@ -23,5 +23,10 @@
   "seaofmemory.configuration.absorptionSeconds": "Время поглощения",
   "itemGroup.seaofmemory": "Море Памяти",
   "commands.seaofmemory.silhouette.on": "Силуэтная сцена включена для игроков: %s",
-  "commands.seaofmemory.silhouette.off": "Силуэтная сцена выключена для игроков: %s"
+  "commands.seaofmemory.silhouette.off": "Силуэтная сцена выключена для игроков: %s",
+  "entity.seaofmemory.snow_person": "Снежный человек",
+  "entity.seaofmemory.plush_hare": "Плюшевый заяц",
+  "item.seaofmemory.snow_person_spawn_egg": "Яйцо призыва снежного человека",
+  "item.seaofmemory.plush_hare_spawn_egg": "Яйцо призыва плюшевого зайца",
+  "item.seaofmemory.button_eye": "Глаз-пуговица"
 }
