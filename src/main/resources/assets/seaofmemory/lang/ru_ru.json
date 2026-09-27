@@ -33,5 +33,8 @@
   "commands.seaofmemory.cold.fog": "  туман %s × биом %s, темно: %s, один: %s → %s",
   "commands.seaofmemory.cold.sources": "  смотрят снежных людей: %s (+%s), огонь: %s, яркий свет: %s, рядом кто-то: %s",
   "commands.seaofmemory.fog.lost": "Потеряны в тумане (в загруженных чанках): %s",
-  "commands.seaofmemory.fog.lost.entry": "  %s: %s %s %s, в %s блоках"
+  "commands.seaofmemory.fog.lost.entry": "  %s: %s %s %s, в %s блоках",
+  "seaofmemory.configuration.snowPeople": "Снежные люди",
+  "seaofmemory.configuration.cap": "Предел вокруг игрока",
+  "seaofmemory.configuration.spawnChance": "Шанс появления"
 }

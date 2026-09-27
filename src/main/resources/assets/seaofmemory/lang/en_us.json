@@ -33,5 +33,8 @@
   "commands.seaofmemory.cold.fog": "  fog %s x biome %s, dark: %s, alone: %s -> %s",
   "commands.seaofmemory.cold.sources": "  watched by %s snow people (+%s), fire: %s, bright light: %s, company: %s",
   "commands.seaofmemory.fog.lost": "Lost in the fog (loaded chunks): %s",
-  "commands.seaofmemory.fog.lost.entry": "  %s at %s %s %s, %s blocks away"
+  "commands.seaofmemory.fog.lost.entry": "  %s at %s %s %s, %s blocks away",
+  "seaofmemory.configuration.snowPeople": "Snow People",
+  "seaofmemory.configuration.cap": "Cap Around a Player",
+  "seaofmemory.configuration.spawnChance": "Spawn Chance"
 }

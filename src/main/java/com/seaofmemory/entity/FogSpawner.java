@@ -3,6 +3,7 @@ package com.seaofmemory.entity;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import com.seaofmemory.Config;
 import com.seaofmemory.SeaOfMemory;
 import com.seaofmemory.fog.CognitiveFog;
 import com.seaofmemory.sea.FogWorld;
@@ -39,13 +40,16 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  */
 @EventBusSubscriber(modid = SeaOfMemory.MODID)
 public final class FogSpawner {
-    private static final int INTERVAL = 40;
-    private static final int SNOW_PEOPLE_CAP = 8;
-    private static final double CAP_RADIUS = 48;
-    private static final int SPAWN_ATTEMPTS = 2;
-    // Roughly one hare per ten minutes spent near a village in the fog world, never two close together.
+    // Public: the server config describes its settings with these.
+    public static final int SNOW_PEOPLE_INTERVAL = 160;
+    // How many snow people may gather around one player, and the chance per check that one more tries to rise,
+    // live in the server config. A real crowd is for when something bigger stirs.
+    public static final double CAP_RADIUS = 64;
+    // Roughly one hare per ten minutes spent near a village in the fog world (a 1 in HARE_CHANCE roll every
+    // HARE_INTERVAL ticks), never two close together. On its own timer, so tuning snow people leaves it alone.
     // Only there: its fight is played out in silhouettes, and those only show in the fog reality.
     // And only in villages: it is a child's toy, it turns up where children used to live.
+    private static final int HARE_INTERVAL = 40;
     private static final int HARE_CHANCE = 300;
     private static final int HARE_ATTEMPTS = 12;
     private static final double HARE_EXCLUSION_RADIUS = 128;
@@ -83,27 +87,39 @@ public final class FogSpawner {
 
     @SubscribeEvent
     static void onServerTick(ServerTickEvent.Post event) {
-        if (event.getServer().getTickCount() % INTERVAL != 0) {
+        int tick = event.getServer().getTickCount();
+        boolean snowPeople = tick % SNOW_PEOPLE_INTERVAL == 0;
+        boolean hare = tick % HARE_INTERVAL == 0;
+        if (!snowPeople && !hare) {
             return;
         }
         for (ServerLevel level : event.getServer().getAllLevels()) {
             if ((level.dimension() == Level.OVERWORLD || FogWorld.is(level)) && level.getDifficulty() != Difficulty.PEACEFUL) {
                 for (ServerPlayer player : level.players()) {
-                    if (!player.isSpectator()) {
-                        spawnAround(level, player);
+                    if (player.isSpectator()) {
+                        continue;
+                    }
+                    if (snowPeople) {
+                        spawnSnowPerson(level, player);
+                    }
+                    if (hare && FogWorld.is(level)) {
+                        spawnHare(level, player);
                     }
                 }
             }
         }
     }
 
-    private static void spawnAround(ServerLevel level, ServerPlayer player) {
+    private static void spawnSnowPerson(ServerLevel level, ServerPlayer player) {
         AABB area = player.getBoundingBox().inflate(CAP_RADIUS);
         int nearby = level.getEntitiesOfClass(SnowPerson.class, area).size();
-        for (int i = nearby; i < Math.min(nearby + SPAWN_ATTEMPTS, SNOW_PEOPLE_CAP); i++) {
+        if (nearby < Config.SNOW_PEOPLE_CAP.getAsInt() && player.getRandom().nextDouble() < Config.SNOW_PEOPLE_SPAWN_CHANCE.getAsDouble()) {
             trySpawn(level, player, ModEntities.SNOW_PERSON.get(), 16, 32, pos -> true);
         }
-        if (FogWorld.is(level) && player.getRandom().nextInt(HARE_CHANCE) == 0
+    }
+
+    private static void spawnHare(ServerLevel level, ServerPlayer player) {
+        if (player.getRandom().nextInt(HARE_CHANCE) == 0
                 && level.getEntitiesOfClass(PlushHare.class, player.getBoundingBox().inflate(HARE_EXCLUSION_RADIUS)).isEmpty()) {
             for (int i = 0; i < HARE_ATTEMPTS; i++) {
                 if (trySpawn(level, player, ModEntities.PLUSH_HARE.get(), 24, 40, pos -> inVillage(level, pos))) {
