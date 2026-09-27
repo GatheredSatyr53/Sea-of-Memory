@@ -1,0 +1,11 @@
+{
+  "type": "seaofmemory:fog",
+  "generator": {
+    "type": "minecraft:noise",
+    "biome_source": {
+      "type": "minecraft:multi_noise",
+      "preset": "minecraft:overworld"
+    },
+    "settings": "seaofmemory:fog"
+  }
+}

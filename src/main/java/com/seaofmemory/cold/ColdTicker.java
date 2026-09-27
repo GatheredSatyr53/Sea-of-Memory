@@ -73,7 +73,7 @@ public final class ColdTicker {
 
     private static float change(ServerLevel level, ServerPlayer player) {
         BlockPos eyes = BlockPos.containing(player.getEyePosition());
-        float density = CognitiveFog.getDensity(level.getChunkAt(eyes));
+        float density = CognitiveFog.densityAt(level, eyes);
         boolean company = hasCompany(level, player);
 
         float rise = density * FOG_RATE;

@@ -13,5 +13,13 @@
   "commands.seaofmemory.cold.set": "Холод %s установлен для игроков: %s",
   "seaofmemory.configuration.cold": "Холод",
   "seaofmemory.configuration.riseMultiplier": "Множитель нарастания",
-  "seaofmemory.configuration.freezeDamage": "Урон от замерзания"
+  "seaofmemory.configuration.freezeDamage": "Урон от замерзания",
+  "block.seaofmemory.fog_beacon": "Маяк",
+  "seaofmemory.fog.no_sleep": "Здесь не уснуть",
+  "commands.seaofmemory.fog.absorb": "Туман забрал игрока %s",
+  "commands.seaofmemory.fog.absorb.failed": "Туману не удалось забрать игрока %s",
+  "commands.seaofmemory.fog.release": "Туман отпустил игрока %s",
+  "commands.seaofmemory.fog.release.failed": "Игрок %s не в тумане",
+  "seaofmemory.configuration.absorptionSeconds": "Время поглощения",
+  "itemGroup.seaofmemory": "Море Памяти"
 }

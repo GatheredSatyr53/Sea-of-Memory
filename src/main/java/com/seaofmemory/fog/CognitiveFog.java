@@ -4,9 +4,13 @@ import java.util.function.Supplier;
 
 import com.mojang.serialization.Codec;
 import com.seaofmemory.SeaOfMemory;
+import com.seaofmemory.sea.FogWorld;
+
+import net.minecraft.core.BlockPos;
 
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -18,6 +22,8 @@ import net.neoforged.neoforge.registries.NeoForgeRegistries;
  */
 public final class CognitiveFog {
     public static final float CRITICAL = 0.75f;
+    // Inside the fog world the fog is everywhere, thick but just below critical.
+    public static final float FOG_WORLD_DENSITY = 0.6f;
 
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES = DeferredRegister.create(NeoForgeRegistries.Keys.ATTACHMENT_TYPES, SeaOfMemory.MODID);
 
@@ -33,6 +39,13 @@ public final class CognitiveFog {
     public static float getDensity(ChunkAccess chunk) {
         Float density = chunk.getExistingDataOrNull(DENSITY.get());
         return density == null ? 0f : density;
+    }
+
+    /**
+     * Fog density at a position in any level, including the fog world.
+     */
+    public static float densityAt(Level level, BlockPos pos) {
+        return FogWorld.is(level) ? FOG_WORLD_DENSITY : getDensity(level.getChunkAt(pos));
     }
 
     public static void setDensity(ChunkAccess chunk, float density) {

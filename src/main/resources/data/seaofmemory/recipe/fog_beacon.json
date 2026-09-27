@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "A": "minecraft:amethyst_shard",
+    "G": "minecraft:glowstone_dust",
+    "C": "minecraft:copper_ingot",
+    "I": "minecraft:iron_ingot"
+  },
+  "pattern": [
+    " A ",
+    "GCG",
+    "I I"
+  ],
+  "result": {
+    "id": "seaofmemory:fog_beacon"
+  }
+}

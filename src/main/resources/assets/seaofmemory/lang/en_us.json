@@ -13,5 +13,13 @@
   "commands.seaofmemory.cold.set": "Set cold to %s for %s players",
   "seaofmemory.configuration.cold": "Cold",
   "seaofmemory.configuration.riseMultiplier": "Rise Multiplier",
-  "seaofmemory.configuration.freezeDamage": "Freeze Damage"
+  "seaofmemory.configuration.freezeDamage": "Freeze Damage",
+  "block.seaofmemory.fog_beacon": "Fog Beacon",
+  "seaofmemory.fog.no_sleep": "Sleep does not come here",
+  "commands.seaofmemory.fog.absorb": "The fog took %s",
+  "commands.seaofmemory.fog.absorb.failed": "The fog could not take %s",
+  "commands.seaofmemory.fog.release": "The fog let %s go",
+  "commands.seaofmemory.fog.release.failed": "%s is not in the fog",
+  "seaofmemory.configuration.absorptionSeconds": "Absorption Time",
+  "itemGroup.seaofmemory": "Sea of Memory"
 }

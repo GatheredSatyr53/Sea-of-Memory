@@ -5,12 +5,15 @@ import java.util.Locale;
 import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.seaofmemory.SeaOfMemory;
+import com.seaofmemory.sea.FogWorld;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -18,7 +21,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
 /**
- * Debug command: {@code /seaofmemory fog get} and {@code /seaofmemory fog set <density> [radius]}.
+ * Debug command: {@code /seaofmemory fog get}, {@code /seaofmemory fog set <density> [radius]},
+ * {@code /seaofmemory fog absorb [player]} and {@code /seaofmemory fog release [player]}.
  */
 @EventBusSubscriber(modid = SeaOfMemory.MODID)
 public final class FogCommand {
@@ -31,6 +35,14 @@ public final class FogCommand {
                 .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                 .then(Commands.literal("fog")
                         .then(Commands.literal("get").executes(ctx -> get(ctx.getSource())))
+                        .then(Commands.literal("absorb")
+                                .executes(ctx -> absorb(ctx.getSource(), ctx.getSource().getPlayerOrException()))
+                                .then(Commands.argument("player", EntityArgument.player())
+                                        .executes(ctx -> absorb(ctx.getSource(), EntityArgument.getPlayer(ctx, "player")))))
+                        .then(Commands.literal("release")
+                                .executes(ctx -> release(ctx.getSource(), ctx.getSource().getPlayerOrException()))
+                                .then(Commands.argument("player", EntityArgument.player())
+                                        .executes(ctx -> release(ctx.getSource(), EntityArgument.getPlayer(ctx, "player")))))
                         .then(Commands.literal("set")
                                 .then(Commands.argument("density", FloatArgumentType.floatArg(0f, 1f))
                                         .executes(ctx -> set(ctx.getSource(), FloatArgumentType.getFloat(ctx, "density"), 0))
@@ -64,6 +76,24 @@ public final class FogCommand {
         int chunks = changed;
         source.sendSuccess(() -> Component.translatable("commands.seaofmemory.fog.set", format(density), chunks), true);
         return chunks;
+    }
+
+    private static int absorb(CommandSourceStack source, ServerPlayer player) {
+        if (!FogWorld.absorb(player)) {
+            source.sendFailure(Component.translatable("commands.seaofmemory.fog.absorb.failed", player.getDisplayName()));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.translatable("commands.seaofmemory.fog.absorb", player.getDisplayName()), true);
+        return 1;
+    }
+
+    private static int release(CommandSourceStack source, ServerPlayer player) {
+        if (!FogWorld.is(player.level()) || !FogWorld.release(player, player.blockPosition())) {
+            source.sendFailure(Component.translatable("commands.seaofmemory.fog.release.failed", player.getDisplayName()));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.translatable("commands.seaofmemory.fog.release", player.getDisplayName()), true);
+        return 1;
     }
 
     private static String format(float value) {

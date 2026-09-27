@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=false": {
+      "model": "seaofmemory:block/fog_beacon"
+    },
+    "lit=true": {
+      "model": "seaofmemory:block/fog_beacon_on"
+    }
+  }
+}

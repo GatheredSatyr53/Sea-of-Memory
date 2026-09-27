@@ -22,6 +22,10 @@ public final class Config {
             .comment("Maximum density lost per update while fog clears; lower than riseRate so fog lingers")
             .defineInRange("fallRate", 0.005, 0.0, 1.0);
 
+    public static final ModConfigSpec.IntValue ABSORPTION_SECONDS = BUILDER
+            .comment("Seconds a player has to stay in critical fog before it pulls them into the fog world")
+            .defineInRange("absorptionSeconds", 15, 1, 600);
+
     static {
         BUILDER.pop().push("cold");
     }

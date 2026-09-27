@@ -1,0 +1,6 @@
+{
+  "parent": "seaofmemory:block/fog_beacon",
+  "textures": {
+    "crystal": "minecraft:block/ochre_froglight_side"
+  }
+}

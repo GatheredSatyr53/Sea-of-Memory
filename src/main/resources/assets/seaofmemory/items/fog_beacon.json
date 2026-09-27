@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "seaofmemory:block/fog_beacon"
+  }
+}

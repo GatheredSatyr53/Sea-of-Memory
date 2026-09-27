@@ -2,6 +2,8 @@ package com.seaofmemory.client;
 
 import com.seaofmemory.SeaOfMemory;
 import com.seaofmemory.fog.CognitiveFog;
+import com.seaofmemory.sea.Absorption;
+import com.seaofmemory.sea.FogWorld;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -50,7 +52,9 @@ public final class CognitiveFogRenderer {
             return;
         }
         previousDensity = currentDensity;
-        float target = sampleDensity(level, minecraft.player.position());
+        float target = FogWorld.is(level) ? CognitiveFog.FOG_WORLD_DENSITY : sampleDensity(level, minecraft.player.position());
+        // Being pulled into the fog closes it in completely.
+        target += (1f - target) * Absorption.fraction(minecraft.player);
         currentDensity = Mth.approach(currentDensity, target, SMOOTHING_STEP);
     }
 
