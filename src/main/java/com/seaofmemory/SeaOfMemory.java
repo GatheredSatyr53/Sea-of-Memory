@@ -20,6 +20,7 @@ import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.material.PushReaction;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -44,6 +45,8 @@ public class SeaOfMemory {
             .strength(1.5f)
             .sound(SoundType.METAL)
             .noOcclusion()
+            // Pushed by a piston it would leave its registration behind.
+            .pushReaction(PushReaction.BLOCK)
             .lightLevel(state -> state.getValue(FogBeaconBlock.LIT) ? 15 : 0));
     public static final DeferredItem<BlockItem> FOG_BEACON_ITEM = ITEMS.registerSimpleBlockItem("fog_beacon", FOG_BEACON);
 

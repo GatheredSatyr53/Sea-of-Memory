@@ -59,6 +59,13 @@ public class FogBeaconBlock extends Block {
         return InteractionResult.SUCCESS;
     }
 
+    @Override
+    protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean movedByPiston) {
+        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
+        // Broken, blown up or replaced: it must stop calling to the lost at once, even from an unloaded chunk.
+        FogBeacons.setActive(level, pos, false);
+    }
+
     public static boolean isActive(BlockState state) {
         return state.getBlock() instanceof FogBeaconBlock && state.getValue(LIT);
     }

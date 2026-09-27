@@ -1,5 +1,6 @@
 package com.seaofmemory.fog;
 
+import java.util.List;
 import java.util.Locale;
 
 import com.mojang.brigadier.arguments.FloatArgumentType;
@@ -14,18 +15,26 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.entity.EntityTypeTest;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
 /**
  * Debug command: {@code /seaofmemory fog get}, {@code /seaofmemory fog set <density> [radius]},
- * {@code /seaofmemory fog absorb [player]} and {@code /seaofmemory fog release [player]}.
+ * {@code /seaofmemory fog absorb [player]}, {@code /seaofmemory fog release [player]}
+ * and {@code /seaofmemory fog lost}.
  */
 @EventBusSubscriber(modid = SeaOfMemory.MODID)
 public final class FogCommand {
+    private static final int LOST_GLOW_TICKS = 15 * 20;
+
     private FogCommand() {
     }
 
@@ -35,6 +44,7 @@ public final class FogCommand {
                 .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                 .then(Commands.literal("fog")
                         .then(Commands.literal("get").executes(ctx -> get(ctx.getSource())))
+                        .then(Commands.literal("lost").executes(ctx -> lost(ctx.getSource())))
                         .then(Commands.literal("absorb")
                                 .executes(ctx -> absorb(ctx.getSource(), ctx.getSource().getPlayerOrException()))
                                 .then(Commands.argument("player", EntityArgument.player())
@@ -94,6 +104,29 @@ public final class FogCommand {
         }
         source.sendSuccess(() -> Component.translatable("commands.seaofmemory.fog.release", player.getDisplayName()), true);
         return 1;
+    }
+
+    /**
+     * Lists the lost creatures in loaded fog world chunks and makes them glow for a while,
+     * so they can be found through the fog.
+     */
+    private static int lost(CommandSourceStack source) {
+        ServerLevel fog = source.getServer().getLevel(FogWorld.KEY);
+        if (fog == null) {
+            return 0;
+        }
+        List<? extends Mob> lost = fog.getEntities(EntityTypeTest.forClass(Mob.class), mob -> mob.entityTags().contains(FogWorld.LOST_TAG));
+        source.sendSuccess(() -> Component.translatable("commands.seaofmemory.fog.lost", lost.size()), false);
+        Vec3 here = source.getPosition();
+        boolean inFog = FogWorld.is(source.getLevel());
+        for (Mob mob : lost) {
+            mob.addEffect(new MobEffectInstance(MobEffects.GLOWING, LOST_GLOW_TICKS, 0, false, false));
+            BlockPos pos = mob.blockPosition();
+            String distance = inFog ? String.valueOf(Math.round(Math.sqrt(mob.distanceToSqr(here)))) : "-";
+            source.sendSuccess(() -> Component.translatable("commands.seaofmemory.fog.lost.entry",
+                    mob.getName(), pos.getX(), pos.getY(), pos.getZ(), distance), false);
+        }
+        return lost.size();
     }
 
     private static String format(float value) {

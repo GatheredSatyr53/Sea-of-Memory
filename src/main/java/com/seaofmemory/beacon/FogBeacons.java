@@ -19,7 +19,15 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.ai.memory.MemoryModuleType;
+import net.minecraft.world.entity.ai.memory.WalkTarget;
+import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.entity.EntityTypeTest;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -30,6 +38,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  * Active fog beacons in the real world, and what they do for those lost in the fog:
  * a hum they can follow from far away, a pillar of light once they are close,
  * and a way out when they reach the spot where the beacon stands.
+ * Lost villagers hear it too and make their own way towards it.
  */
 @EventBusSubscriber(modid = SeaOfMemory.MODID)
 public final class FogBeacons extends SavedData {
@@ -40,6 +49,9 @@ public final class FogBeacons extends SavedData {
     private static final int GUIDE_INTERVAL = 20;
     private static final int SOUND_INTERVAL = 60;
     private static final int PILLAR_HEIGHT = 24;
+    // Villagers cannot path across the whole range at once, so they are sent towards the beacon in legs this long.
+    private static final double VILLAGER_LEG = 24;
+    private static final float VILLAGER_SPEED = 0.6f;
 
     private static final Codec<FogBeacons> CODEC = RecordCodecBuilder.create(i -> i.group(
             BlockPos.CODEC.listOf().fieldOf("beacons").forGetter(data -> data.beacons)
@@ -96,6 +108,12 @@ public final class FogBeacons extends SavedData {
                 guide(fog, player, beacon, playSound);
             }
         }
+        for (Villager villager : fog.getEntities(EntityTypeTest.forClass(Villager.class), villager -> villager.isAlive() && villager.entityTags().contains(FogWorld.LOST_TAG))) {
+            BlockPos beacon = data.nearest(villager);
+            if (beacon != null) {
+                leadVillager(fog, villager, beacon);
+            }
+        }
     }
 
     /**
@@ -112,11 +130,11 @@ public final class FogBeacons extends SavedData {
         }
     }
 
-    private BlockPos nearest(ServerPlayer player) {
+    private BlockPos nearest(Entity entity) {
         BlockPos nearest = null;
         double nearestSq = RANGE * RANGE;
         for (BlockPos pos : beacons) {
-            double distanceSq = horizontalDistanceSq(player, pos);
+            double distanceSq = horizontalDistanceSq(entity, pos);
             if (distanceSq <= nearestSq) {
                 nearest = pos;
                 nearestSq = distanceSq;
@@ -125,9 +143,9 @@ public final class FogBeacons extends SavedData {
         return nearest;
     }
 
-    private static double horizontalDistanceSq(ServerPlayer player, BlockPos pos) {
-        double dx = player.getX() - (pos.getX() + 0.5);
-        double dz = player.getZ() - (pos.getZ() + 0.5);
+    private static double horizontalDistanceSq(Entity entity, BlockPos pos) {
+        double dx = entity.getX() - (pos.getX() + 0.5);
+        double dz = entity.getZ() - (pos.getZ() + 0.5);
         return dx * dx + dz * dz;
     }
 
@@ -148,13 +166,33 @@ public final class FogBeacons extends SavedData {
         }
     }
 
-    private static boolean rescue(ServerPlayer player, BlockPos beacon) {
-        ServerLevel overworld = player.level().getServer().overworld();
-        // Load the chunk: the beacon must really still be there and shining.
+    /**
+     * Sends a lost villager on the next leg towards the beacon, or out through it once it is there.
+     * Its own brain keeps wandering in between; the beacon wins every second.
+     */
+    private static void leadVillager(ServerLevel fog, Villager villager, BlockPos beacon) {
+        if (horizontalDistanceSq(villager, beacon) <= RESCUE_DISTANCE * RESCUE_DISTANCE && rescue(villager, beacon)) {
+            return;
+        }
+        Vec3 toBeacon = new Vec3(beacon.getX() + 0.5 - villager.getX(), 0, beacon.getZ() + 0.5 - villager.getZ());
+        Vec3 leg = toBeacon.length() > VILLAGER_LEG ? toBeacon.normalize().scale(VILLAGER_LEG) : toBeacon;
+        int x = Mth.floor(villager.getX() + leg.x);
+        int z = Mth.floor(villager.getZ() + leg.z);
+        if (!fog.hasChunkAt(new BlockPos(x, 0, z))) {
+            return;
+        }
+        BlockPos target = new BlockPos(x, fog.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z), z);
+        villager.getBrain().setMemory(MemoryModuleType.WALK_TARGET, new WalkTarget(target, VILLAGER_SPEED, 1));
+    }
+
+    private static boolean rescue(Entity entity, BlockPos beacon) {
+        ServerLevel overworld = entity.level().getServer().overworld();
+        // Load the chunk: the beacon must really still be there and shining. If it is not, forget it for good.
         if (!FogBeaconBlock.isActive(overworld.getBlockState(beacon))) {
+            setActive(overworld, beacon, false);
             return false;
         }
-        if (!FogWorld.release(player, beacon.east())) {
+        if (!FogWorld.release(entity, beacon.east())) {
             return false;
         }
         overworld.playSound(null, beacon, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 1f, 0.8f);
