@@ -1,0 +1,10 @@
+{
+  "values": {
+    "seaofmemory:snow_person": {
+      "acceptable_villager_distance": 12.0
+    },
+    "seaofmemory:plush_hare": {
+      "acceptable_villager_distance": 16.0
+    }
+  }
+}

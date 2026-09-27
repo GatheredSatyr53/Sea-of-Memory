@@ -24,10 +24,17 @@ import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.ai.util.DefaultRandomPos;
+import net.minecraft.world.entity.npc.villager.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.pathfinder.PathType;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.navigation.WallClimberNavigation;
 
@@ -37,6 +44,9 @@ import java.util.EnumSet;
  * "Снежные люди" from "Огонёк": pale, faceless figures moulded out of wet snow and someone's grief.
  * They drift towards light, warmth and noise, crawl over walls and roofs, and their blank stare
  * alone makes a person colder (see ColdTicker). They melt away once the fog thins out.
+ * <p>
+ * Drawn to warmth, they still cannot bear it up close: they shy away from fire and lava and end up
+ * crowding at the edge of its light. They hunt villagers as well as players.
  */
 public class SnowPerson extends Monster {
     private static final EntityDataAccessor<Boolean> DATA_CLIMBING = SynchedEntityData.defineId(SnowPerson.class, EntityDataSerializers.BOOLEAN);
@@ -51,12 +61,21 @@ public class SnowPerson extends Monster {
     private static final int LIGHT_SCAN_RADIUS = 16;
     private static final int LIGHT_SCAN_SAMPLES = 16;
     private static final int ATTRACTIVE_LIGHT = 10;
+    // Closer than this to fire or lava they back off.
+    private static final int HEAT_RADIUS = 3;
+    private static final int RETREAT_DISTANCE = 8;
+    private static final double RETREAT_SPEED = 1.2;
 
     private BlockPos lure;
     private int lureTicks;
 
     public SnowPerson(EntityType<? extends SnowPerson> type, Level level) {
         super(type, level);
+        // Never plan a path through or right next to fire or lava.
+        setPathfindingMalus(PathType.FIRE, -1f);
+        setPathfindingMalus(PathType.FIRE_IN_NEIGHBOR, -1f);
+        setPathfindingMalus(PathType.DAMAGING_IN_NEIGHBOR, -1f);
+        setPathfindingMalus(PathType.LAVA, -1f);
     }
 
     public static AttributeSupplier.Builder createAttributes() {
@@ -70,12 +89,14 @@ public class SnowPerson extends Monster {
     @Override
     protected void registerGoals() {
         goalSelector.addGoal(0, new FloatGoal(this));
+        goalSelector.addGoal(1, new ShyFromHeatGoal(this));
         goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.1, false));
         goalSelector.addGoal(3, new FollowLureGoal(this));
         goalSelector.addGoal(6, new WaterAvoidingRandomStrollGoal(this, 0.6));
         goalSelector.addGoal(7, new LookAtPlayerGoal(this, Player.class, (float) GAZE_RANGE));
         targetSelector.addGoal(1, new HurtByTargetGoal(this).setAlertOthers());
         targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true));
+        targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, AbstractVillager.class, true));
     }
 
     @Override
@@ -189,6 +210,56 @@ public class SnowPerson extends Monster {
     @Override
     protected void playStepSound(BlockPos pos, BlockState state) {
         playSound(SoundEvents.SNOW_STEP, 0.3f, 0.8f);
+    }
+
+    /**
+     * The nearest fire, lava or other heat source within {@link #HEAT_RADIUS}, if any.
+     */
+    private BlockPos nearbyHeat() {
+        BlockPos center = blockPosition();
+        BlockPos nearest = null;
+        double nearestSq = Double.MAX_VALUE;
+        for (BlockPos pos : BlockPos.betweenClosed(center.offset(-HEAT_RADIUS, -HEAT_RADIUS, -HEAT_RADIUS), center.offset(HEAT_RADIUS, HEAT_RADIUS, HEAT_RADIUS))) {
+            BlockState state = level().getBlockState(pos);
+            boolean hot = state.is(Cold.WARMTH_SOURCES) && state.getValueOrElse(BlockStateProperties.LIT, true)
+                    || state.is(BlockTags.FIRE) || state.getFluidState().is(FluidTags.LAVA);
+            double distanceSq = pos.distSqr(center);
+            if (hot && distanceSq < nearestSq) {
+                nearest = pos.immutable();
+                nearestSq = distanceSq;
+            }
+        }
+        return nearest;
+    }
+
+    /**
+     * Backs away from heat, even in the middle of a chase.
+     */
+    private static final class ShyFromHeatGoal extends Goal {
+        private final SnowPerson mob;
+
+        ShyFromHeatGoal(SnowPerson mob) {
+            this.mob = mob;
+            setFlags(EnumSet.of(Flag.MOVE));
+        }
+
+        @Override
+        public boolean canUse() {
+            if (mob.tickCount % 10 != 0) {
+                return false;
+            }
+            BlockPos heat = mob.nearbyHeat();
+            if (heat == null) {
+                return false;
+            }
+            Vec3 away = DefaultRandomPos.getPosAway(mob, RETREAT_DISTANCE, 4, Vec3.atCenterOf(heat));
+            return away != null && mob.getNavigation().moveTo(away.x, away.y, away.z, RETREAT_SPEED);
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return !mob.getNavigation().isDone();
+        }
     }
 
     /**

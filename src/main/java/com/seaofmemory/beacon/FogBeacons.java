@@ -174,6 +174,10 @@ public final class FogBeacons extends SavedData {
         if (horizontalDistanceSq(villager, beacon) <= RESCUE_DISTANCE * RESCUE_DISTANCE && rescue(villager, beacon)) {
             return;
         }
+        // Running from something comes first; the beacon can wait.
+        if (villager.getBrain().hasMemoryValue(MemoryModuleType.NEAREST_HOSTILE)) {
+            return;
+        }
         Vec3 toBeacon = new Vec3(beacon.getX() + 0.5 - villager.getX(), 0, beacon.getZ() + 0.5 - villager.getZ());
         Vec3 leg = toBeacon.length() > VILLAGER_LEG ? toBeacon.normalize().scale(VILLAGER_LEG) : toBeacon;
         int x = Mth.floor(villager.getX() + leg.x);

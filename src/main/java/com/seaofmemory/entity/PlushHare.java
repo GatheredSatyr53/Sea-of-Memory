@@ -40,6 +40,8 @@ import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.navigation.WallClimberNavigation;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.Level;
@@ -73,10 +75,18 @@ public class PlushHare extends Monster {
     // Players this close to the torn-open hare are pulled into its scene, and stay in it until it is gone.
     private static final double SCENE_RADIUS = 24;
     private static final int SCENE_JOIN_INTERVAL = 20;
+    // Once torn open, its gaze turns stomachs: whoever it looks at gets nauseous, now and then.
+    private static final double GAZE_RANGE = 16;
+    private static final double GAZE_CONE_COS = Math.cos(Math.toRadians(25));
+    // Nausea blends in over 150 ticks and starts fading 60 ticks before it ends, so a short dose never gets going:
+    // it lasts long enough to reach full strength and is renewed while the stare holds.
+    private static final int GAZE_COOLDOWN = 80;
+    private static final int NAUSEA_TICKS = 300;
 
     private final ServerBossEvent bossEvent = new ServerBossEvent(Mth.createInsecureUUID(random), getDisplayName(),
             BossEvent.BossBarColor.WHITE, BossEvent.BossBarOverlay.NOTCHED_10);
     private final Set<UUID> scenePlayers = new HashSet<>();
+    private int gazeCooldown;
 
     public PlushHare(EntityType<? extends PlushHare> type, Level level) {
         super(type, level);
@@ -143,6 +153,9 @@ public class PlushHare extends Monster {
         if (isTransformed() && tickCount % SCENE_JOIN_INTERVAL == 0) {
             joinScene(level);
         }
+        if (isTransformed()) {
+            gazeAt(level);
+        }
         LivingEntity target = getTarget();
         if (!isTransformed() && target != null && onGround() && tickCount % HOP_INTERVAL == 0) {
             hopTowards(target);
@@ -179,6 +192,32 @@ public class PlushHare extends Monster {
             if (scenePlayers.add(player.getUUID())) {
                 Scenes.silhouette(player, SilhouettePayload.UNTIL_STOPPED);
             }
+        }
+    }
+
+    /**
+     * Whoever meets the glowing socket's stare, with nothing in between, is sickened by it.
+     */
+    private void gazeAt(ServerLevel level) {
+        if (gazeCooldown > 0) {
+            gazeCooldown--;
+            return;
+        }
+        Vec3 eye = getEyePosition();
+        Vec3 look = getViewVector(1f);
+        boolean stared = false;
+        for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class, getBoundingBox().inflate(GAZE_RANGE))) {
+            if (player.isCreative() || player.isSpectator() || !hasLineOfSight(player)) {
+                continue;
+            }
+            Vec3 toPlayer = player.getEyePosition().subtract(eye).normalize();
+            if (look.dot(toPlayer) >= GAZE_CONE_COS) {
+                player.addEffect(new MobEffectInstance(MobEffects.NAUSEA, NAUSEA_TICKS, 0, false, false, true));
+                stared = true;
+            }
+        }
+        if (stared) {
+            gazeCooldown = GAZE_COOLDOWN;
         }
     }
 
