@@ -2,7 +2,7 @@ package com.seaofmemory;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
 
-// Server config: stored per world and synced to clients.
+// Server config: config/seaofmemory-server.toml, overridable per world in <world>/serverconfig/; synced to clients.
 public final class Config {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder().push("fog");
 
@@ -25,6 +25,10 @@ public final class Config {
     public static final ModConfigSpec.IntValue ABSORPTION_SECONDS = BUILDER
             .comment("Seconds a player has to stay in critical fog before it pulls them into the fog world")
             .defineInRange("absorptionSeconds", 15, 1, 600);
+
+    public static final ModConfigSpec.IntValue IMPRINT_AFTER_DAYS = BUILDER
+            .comment("In-game days players must have spent around a real world chunk before what they built there carries over into the fog world")
+            .defineInRange("imprintAfterDays", 3, 0, 1000);
 
     static {
         BUILDER.pop().push("cold");

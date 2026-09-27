@@ -74,6 +74,10 @@ public final class FogWorld {
      */
     private static Vec3 surface(ServerLevel level, int x, int z, Heightmap.Types type) {
         LevelChunk chunk = level.getChunk(SectionPos.blockToSectionCoord(x), SectionPos.blockToSectionCoord(z));
+        if (is(level)) {
+            // Whatever people built here has to be in place before we decide where the player stands.
+            MemoryImprint.imprintNow(level.getServer(), level, chunk);
+        }
         int y = chunk.getHeight(type, x & 15, z & 15) + 1;
         if (y <= level.getMinY()) {
             // An empty column (nothing to stand on at all): better above the sea than in the void.

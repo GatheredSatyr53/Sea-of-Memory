@@ -28,7 +28,10 @@ public final class MemoryDensityFunction implements DensityFunction.SimpleFuncti
         return memory(context.blockX(), context.blockZ());
     }
 
-    static double memory(int x, int z) {
+    /**
+     * Memory of a column: 1 for an intact copy of the real world, 0 for open sea.
+     */
+    public static double memory(int x, int z) {
         long[] anchors = MemoryAnchors.snapshot();
         double nearestSq = Double.MAX_VALUE;
         for (long anchor : anchors) {

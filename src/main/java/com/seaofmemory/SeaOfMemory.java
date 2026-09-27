@@ -10,6 +10,7 @@ import com.seaofmemory.entity.ModEntities;
 import com.seaofmemory.fog.CognitiveFog;
 import com.seaofmemory.sea.Absorption;
 import com.seaofmemory.sea.MemoryDensityFunction;
+import com.seaofmemory.sea.MemoryImprint;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -65,6 +66,7 @@ public class SeaOfMemory {
         CognitiveFog.ATTACHMENT_TYPES.register(modEventBus);
         Cold.ATTACHMENT_TYPES.register(modEventBus);
         Absorption.ATTACHMENT_TYPES.register(modEventBus);
+        MemoryImprint.ATTACHMENT_TYPES.register(modEventBus);
         ModEntities.ENTITY_TYPES.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.SERVER, Config.SPEC);

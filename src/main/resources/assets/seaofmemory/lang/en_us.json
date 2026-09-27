@@ -28,5 +28,6 @@
   "entity.seaofmemory.plush_hare": "Plush Hare",
   "item.seaofmemory.snow_person_spawn_egg": "Snow Person Spawn Egg",
   "item.seaofmemory.plush_hare_spawn_egg": "Plush Hare Spawn Egg",
-  "item.seaofmemory.button_eye": "Button Eye"
+  "item.seaofmemory.button_eye": "Button Eye",
+  "seaofmemory.configuration.imprintAfterDays": "Imprint After (days)"
 }
