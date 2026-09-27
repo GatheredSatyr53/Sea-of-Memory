@@ -22,6 +22,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.BossEvent;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -47,6 +48,7 @@ import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
@@ -65,7 +67,7 @@ public class PlushHare extends Monster {
 
     private static final float TRANSFORM_AT_HEALTH = 0.5f;
     private static final double TRANSFORMED_SPEED = 0.34;
-    private static final double TRANSFORMED_DAMAGE = 7;
+    private static final double TRANSFORMED_DAMAGE = 8;
     private static final float WEAK_POINT_MULTIPLIER = 2.5f;
     // Radius of the head around the empty socket, in blocks.
     private static final double HEAD_RADIUS = 0.7;
@@ -82,6 +84,16 @@ public class PlushHare extends Monster {
     // it lasts long enough to reach full strength and is renewed while the stare holds.
     private static final int GAZE_COOLDOWN = 80;
     private static final int NAUSEA_TICKS = 300;
+    // The player believes a stuffed toy burns, so it does: fire is its second weakness.
+    private static final float FIRE_MULTIPLIER = 2f;
+    // Once spider legs burst out of it, nobody believes it is a toy any more: less belief, less plush to burn.
+    // Fire takes it less well and slides off it faster.
+    private static final float TRANSFORMED_FIRE_MULTIPLIER = 1f;
+    private static final int SMOULDER_INTERVAL = 3;
+    // But it is still a projection that cares nothing for fire: flames slide off it, and burning
+    // it carries away dies out this many times faster. Standing in fire keeps relighting it as usual.
+    private static final int FIRE_FADE_RATE = 4;
+    private static final int TRANSFORMED_FIRE_FADE_RATE = 6;
 
     private final ServerBossEvent bossEvent = new ServerBossEvent(Mth.createInsecureUUID(random), getDisplayName(),
             BossEvent.BossBarColor.WHITE, BossEvent.BossBarOverlay.NOTCHED_10);
@@ -91,11 +103,15 @@ public class PlushHare extends Monster {
     public PlushHare(EntityType<? extends PlushHare> type, Level level) {
         super(type, level);
         xpReward = 30;
+        // Unlike the snow people it does not shy from fire: it walks straight through, even if it burns.
+        // Lava stays off its paths, or it would simply drown in it.
+        setPathfindingMalus(PathType.FIRE, 0f);
+        setPathfindingMalus(PathType.FIRE_IN_NEIGHBOR, 0f);
     }
 
     public static AttributeSupplier.Builder createAttributes() {
         return Monster.createMonsterAttributes()
-                .add(Attributes.MAX_HEALTH, 80)
+                .add(Attributes.MAX_HEALTH, 320)
                 .add(Attributes.MOVEMENT_SPEED, 0.2)
                 .add(Attributes.ATTACK_DAMAGE, 4)
                 .add(Attributes.FOLLOW_RANGE, 32)
@@ -138,9 +154,32 @@ public class PlushHare extends Monster {
     @Override
     public void tick() {
         super.tick();
-        if (!level().isClientSide()) {
+        if (level() instanceof ServerLevel level) {
             entityData.set(DATA_CLIMBING, isTransformed() && horizontalCollision);
+            if (getRemainingFireTicks() > 0) {
+                // The game already took one tick off; take the rest.
+                setRemainingFireTicks(Math.max(0, getRemainingFireTicks() - ((isTransformed() ? TRANSFORMED_FIRE_FADE_RATE : FIRE_FADE_RATE) - 1)));
+            }
+            if (isOnFire() && tickCount % SMOULDER_INTERVAL == 0) {
+                smoulder(level);
+            }
         }
+    }
+
+    /**
+     * Burning tufts of stuffing drop off it, with sparks, ash and smoke.
+     */
+    private void smoulder(ServerLevel level) {
+        double x = getX();
+        double y = getY() + getBbHeight() * 0.5;
+        double z = getZ();
+        double spreadX = getBbWidth() * 0.4;
+        double spreadY = getBbHeight() * 0.3;
+        level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, Blocks.WOOL.pick(DyeColor.WHITE).defaultBlockState()),
+                x, y, z, 2, spreadX, spreadY, spreadX, 0.02);
+        level.sendParticles(ParticleTypes.SMALL_FLAME, x, y, z, 1, spreadX, spreadY, spreadX, 0.01);
+        level.sendParticles(ParticleTypes.WHITE_ASH, x, y, z, 2, spreadX, spreadY, spreadX, 0.02);
+        level.sendParticles(ParticleTypes.SMOKE, x, y + spreadY, z, 1, spreadX, 0.1, spreadX, 0.01);
     }
 
     @Override
@@ -256,6 +295,9 @@ public class PlushHare extends Monster {
 
     @Override
     public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
+        if (source.is(DamageTypeTags.IS_FIRE)) {
+            damage *= isTransformed() ? TRANSFORMED_FIRE_MULTIPLIER : FIRE_MULTIPLIER;
+        }
         if (hitsWeakPoint(source)) {
             damage *= WEAK_POINT_MULTIPLIER;
             level.playSound(null, blockPosition(), SoundEvents.WOOL_BREAK, SoundSource.HOSTILE, 1.5f, 1.4f);
