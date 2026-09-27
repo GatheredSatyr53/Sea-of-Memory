@@ -42,8 +42,25 @@ public final class ColdCommand {
 
     private static int get(CommandSourceStack source, ServerPlayer player) {
         float cold = Cold.get(player);
-        source.sendSuccess(() -> Component.translatable("commands.seaofmemory.cold.get", player.getDisplayName(), String.format(Locale.ROOT, "%.1f", cold)), false);
+        ColdTicker.Target target = ColdTicker.target(player.level(), player);
+        source.sendSuccess(() -> Component.translatable("commands.seaofmemory.cold.get", player.getDisplayName(),
+                format(cold), format(target.target())), false);
+        // What the target is made of, so it can be checked on the spot.
+        source.sendSuccess(() -> Component.translatable("commands.seaofmemory.cold.fog",
+                format(target.density()), format(target.temperatureFactor()), yesNo(target.dark()), yesNo(target.alone()),
+                format(target.fogCold())), false);
+        source.sendSuccess(() -> Component.translatable("commands.seaofmemory.cold.sources",
+                target.watchingSnowPeople(), format(target.snowPeopleCold()), yesNo(target.warmth()), yesNo(target.bright()),
+                yesNo(!target.alone())), false);
         return Math.round(cold);
+    }
+
+    private static String format(float value) {
+        return String.format(Locale.ROOT, "%.2f", value);
+    }
+
+    private static Component yesNo(boolean value) {
+        return Component.translatable(value ? "gui.yes" : "gui.no");
     }
 
     private static int set(CommandSourceStack source, Collection<ServerPlayer> players, float value) {

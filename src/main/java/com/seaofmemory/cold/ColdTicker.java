@@ -2,17 +2,20 @@ package com.seaofmemory.cold;
 
 import com.seaofmemory.Config;
 import com.seaofmemory.SeaOfMemory;
+import com.seaofmemory.entity.SnowPerson;
 import com.seaofmemory.fog.CognitiveFog;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.AABB;
@@ -21,28 +24,43 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 /**
- * Once a second, moves each player's cold up or down.
+ * Once a second, moves each player's cold towards a target level that depends on where they are.
  * <ul>
- * <li>Fog makes it rise, much faster at critical density; darkness and being alone make that worse.</li>
- * <li>Warmth sources, bright light and company (the threads between people) push it back down.</li>
+ * <li>Fog sets the level: nothing in thin fog, rising steeply towards critical density.
+ * Cold biomes make it worse, warm ones soften it; darkness and being alone make it a little worse.</li>
+ * <li>Snow people that can see the player add to it, whatever the fog.</li>
+ * <li>Warmth sources, bright light and company (the threads between people) take it back down.</li>
  * </ul>
+ * Out of the fog and away from snow people the target is zero, so cold fades by itself.
  * At high cold the player slows down; at the maximum they freeze.
  */
 @EventBusSubscriber(modid = SeaOfMemory.MODID)
 public final class ColdTicker {
     private static final int INTERVAL = 20;
 
-    // Per-second rates, in cold points.
-    private static final float FOG_RATE = 0.35f;
-    private static final float CRITICAL_FOG_BONUS = 0.25f;
-    private static final float DARKNESS_MULTIPLIER = 1.5f;
-    private static final float LONELINESS_MULTIPLIER = 1.25f;
-    private static final float WARMTH_RELIEF = 2.5f;
-    private static final float LIGHT_RELIEF = 0.5f;
-    private static final float COMPANY_RELIEF = 0.5f;
-    private static final float CLEAR_AIR_RELIEF = 0.3f;
+    // Fog below this density does not chill at all; at full density it alone can take cold to FOG_COLD.
+    private static final float FOG_THRESHOLD = 0.3f;
+    private static final float FOG_COLD = 70f;
+    // Biome temperature where fog chills normally (plains); colder biomes chill more, warmer ones less.
+    private static final float NEUTRAL_TEMPERATURE = 0.8f;
+    private static final float TEMPERATURE_SENSITIVITY = 0.6f;
+    private static final float MIN_TEMPERATURE_FACTOR = 0.5f;
+    private static final float MAX_TEMPERATURE_FACTOR = 1.6f;
+    private static final float DARKNESS_FACTOR = 1.2f;
+    private static final float LONELINESS_FACTOR = 1.15f;
 
-    private static final float CLEAR_AIR_DENSITY = 0.05f;
+    private static final double SNOW_PERSON_RANGE = 12;
+    private static final float COLD_PER_SNOW_PERSON = 10f;
+    private static final float MAX_SNOW_PEOPLE_COLD = 40f;
+
+    private static final float WARMTH_RELIEF = 40f;
+    private static final float LIGHT_RELIEF = 15f;
+    private static final float COMPANY_RELIEF = 10f;
+
+    // Per-second speed of the drift towards the target: it creeps in slowly and lets go a bit faster.
+    private static final float RISE_SPEED = 1f;
+    private static final float FALL_SPEED = 1.5f;
+
     private static final int DARK_LIGHT_LEVEL = 7;
     private static final int BRIGHT_BLOCK_LIGHT = 12;
     private static final int WARMTH_RADIUS = 3;
@@ -66,42 +84,78 @@ public final class ColdTicker {
         }
 
         ServerLevel level = player.level();
-        float cold = Cold.get(player) + change(level, player);
-        Cold.set(player, cold);
+        float cold = Cold.get(player);
+        float target = target(level, player).target();
+        float speed = target > cold ? RISE_SPEED * (float) Config.COLD_RISE_MULTIPLIER.getAsDouble() : FALL_SPEED;
+        Cold.set(player, Mth.approach(cold, target, speed));
         applyEffects(level, player, Cold.get(player));
     }
 
-    private static float change(ServerLevel level, ServerPlayer player) {
+    /**
+     * What the player's surroundings add up to, and the cold level they pull the player towards.
+     *
+     * @param fogCold          cold from the fog alone, after the biome, darkness and loneliness
+     * @param snowPeopleCold   cold from snow people watching
+     * @param target           the resulting level, from 0 to {@link Cold#MAX}
+     */
+    record Target(float density, float temperatureFactor, boolean dark, boolean alone, float fogCold,
+                  int watchingSnowPeople, float snowPeopleCold, boolean warmth, boolean bright, float target) {
+    }
+
+    static Target target(ServerLevel level, ServerPlayer player) {
         BlockPos eyes = BlockPos.containing(player.getEyePosition());
+        boolean alone = !hasCompany(level, player);
+        boolean dark = level.getMaxLocalRawBrightness(eyes) < DARK_LIGHT_LEVEL;
+        boolean warmth = nearWarmth(level, player.blockPosition());
+        boolean bright = level.getBrightness(LightLayer.BLOCK, eyes) >= BRIGHT_BLOCK_LIGHT;
+
         float density = CognitiveFog.densityAt(level, eyes);
-        boolean company = hasCompany(level, player);
+        float temperatureFactor = temperatureFactor(level, eyes);
+        float fog = Mth.clamp((density - FOG_THRESHOLD) / (1f - FOG_THRESHOLD), 0f, 1f);
+        float fogCold = fog * fog * (3f - 2f * fog) * FOG_COLD * temperatureFactor;
+        if (dark) {
+            fogCold *= DARKNESS_FACTOR;
+        }
+        if (alone) {
+            fogCold *= LONELINESS_FACTOR;
+        }
 
-        float rise = density * FOG_RATE;
-        if (CognitiveFog.isCritical(density)) {
-            rise += CRITICAL_FOG_BONUS;
-        }
-        if (level.getMaxLocalRawBrightness(eyes) < DARK_LIGHT_LEVEL) {
-            rise *= DARKNESS_MULTIPLIER;
-        }
-        if (!company) {
-            rise *= LONELINESS_MULTIPLIER;
-        }
-        rise *= (float) Config.COLD_RISE_MULTIPLIER.getAsDouble();
+        int watching = watchingSnowPeople(level, player);
+        float snowPeopleCold = Math.min(watching * COLD_PER_SNOW_PERSON, MAX_SNOW_PEOPLE_COLD);
 
-        float relief = 0f;
-        if (nearWarmth(level, player.blockPosition())) {
-            relief += WARMTH_RELIEF;
+        float target = fogCold + snowPeopleCold;
+        if (warmth) {
+            target -= WARMTH_RELIEF;
         }
-        if (level.getBrightness(LightLayer.BLOCK, eyes) >= BRIGHT_BLOCK_LIGHT) {
-            relief += LIGHT_RELIEF;
+        if (bright) {
+            target -= LIGHT_RELIEF;
         }
-        if (company) {
-            relief += COMPANY_RELIEF;
+        if (!alone) {
+            target -= COMPANY_RELIEF;
         }
-        if (density < CLEAR_AIR_DENSITY) {
-            relief += CLEAR_AIR_RELIEF;
+        return new Target(density, temperatureFactor, dark, alone, fogCold, watching, snowPeopleCold, warmth, bright,
+                Mth.clamp(target, 0f, Cold.MAX));
+    }
+
+    /**
+     * How much the biome sharpens the fog's chill. Anywhere cold enough to snow counts as cold, whatever the biome.
+     */
+    private static float temperatureFactor(ServerLevel level, BlockPos pos) {
+        Biome biome = level.getBiome(pos).value();
+        float temperature = biome.getBaseTemperature();
+        if (biome.coldEnoughToSnow(pos, level.getSeaLevel())) {
+            temperature = Math.min(temperature, 0.1f);
         }
-        return rise - relief;
+        float factor = 1f + (NEUTRAL_TEMPERATURE - temperature) * TEMPERATURE_SENSITIVITY;
+        return Mth.clamp(factor, MIN_TEMPERATURE_FACTOR, MAX_TEMPERATURE_FACTOR);
+    }
+
+    /**
+     * Being watched by their blank faces is enough to feel it.
+     */
+    private static int watchingSnowPeople(ServerLevel level, ServerPlayer player) {
+        AABB area = player.getBoundingBox().inflate(SNOW_PERSON_RANGE);
+        return level.getEntitiesOfClass(SnowPerson.class, area, snowPerson -> snowPerson.isAlive() && snowPerson.hasLineOfSight(player)).size();
     }
 
     private static boolean nearWarmth(ServerLevel level, BlockPos center) {

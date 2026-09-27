@@ -9,7 +9,7 @@
   "seaofmemory.configuration.simulationRadius": "Simulation Radius",
   "seaofmemory.configuration.riseRate": "Rise Rate",
   "seaofmemory.configuration.fallRate": "Fall Rate",
-  "commands.seaofmemory.cold.get": "%s: cold %s / 100",
+  "commands.seaofmemory.cold.get": "%s: cold %s / 100 (drifting towards %s)",
   "commands.seaofmemory.cold.set": "Set cold to %s for %s players",
   "seaofmemory.configuration.cold": "Cold",
   "seaofmemory.configuration.riseMultiplier": "Rise Multiplier",
@@ -29,5 +29,7 @@
   "item.seaofmemory.snow_person_spawn_egg": "Snow Person Spawn Egg",
   "item.seaofmemory.plush_hare_spawn_egg": "Plush Hare Spawn Egg",
   "item.seaofmemory.button_eye": "Button Eye",
-  "seaofmemory.configuration.imprintAfterDays": "Imprint After (days)"
+  "seaofmemory.configuration.imprintAfterDays": "Imprint After (days)",
+  "commands.seaofmemory.cold.fog": "  fog %s x biome %s, dark: %s, alone: %s -> %s",
+  "commands.seaofmemory.cold.sources": "  watched by %s snow people (+%s), fire: %s, bright light: %s, company: %s"
 }

@@ -36,7 +36,7 @@ import java.util.EnumSet;
 /**
  * "Снежные люди" from "Огонёк": pale, faceless figures moulded out of wet snow and someone's grief.
  * They drift towards light, warmth and noise, crawl over walls and roofs, and their blank stare
- * alone makes a person colder. They melt away once the fog thins out.
+ * alone makes a person colder (see ColdTicker). They melt away once the fog thins out.
  */
 public class SnowPerson extends Monster {
     private static final EntityDataAccessor<Boolean> DATA_CLIMBING = SynchedEntityData.defineId(SnowPerson.class, EntityDataSerializers.BOOLEAN);
@@ -45,7 +45,6 @@ public class SnowPerson extends Monster {
     private static final float MELT_BELOW = 0.55f;
     private static final float MELT_DAMAGE = 2f;
     private static final double GAZE_RANGE = 12;
-    private static final float GAZE_COLD = 0.4f;
     private static final float HIT_COLD = 8f;
     // How long they keep heading for a light or a noise before losing interest.
     private static final int LURE_TICKS = 400;
@@ -121,7 +120,6 @@ public class SnowPerson extends Monster {
             seekLight(level);
         }
         if (tickCount % 20 == 0) {
-            stare(level);
             meltIfFogThins(level);
         }
     }
@@ -145,16 +143,6 @@ public class SnowPerson extends Monster {
         }
         if (brightest != null) {
             lure(brightest);
-        }
-    }
-
-    /**
-     * Being looked at by one of them is enough to feel the cold.
-     */
-    private void stare(ServerLevel level) {
-        Player player = level.getNearestPlayer(this, GAZE_RANGE);
-        if (player != null && !player.isCreative() && !player.isSpectator() && hasLineOfSight(player)) {
-            Cold.set(player, Cold.get(player) + GAZE_COLD);
         }
     }
 

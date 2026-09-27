@@ -9,7 +9,7 @@
   "seaofmemory.configuration.simulationRadius": "Радиус симуляции",
   "seaofmemory.configuration.riseRate": "Скорость сгущения",
   "seaofmemory.configuration.fallRate": "Скорость рассеивания",
-  "commands.seaofmemory.cold.get": "%s: холод %s / 100",
+  "commands.seaofmemory.cold.get": "%s: холод %s / 100 (стремится к %s)",
   "commands.seaofmemory.cold.set": "Холод %s установлен для игроков: %s",
   "seaofmemory.configuration.cold": "Холод",
   "seaofmemory.configuration.riseMultiplier": "Множитель нарастания",
@@ -29,5 +29,7 @@
   "item.seaofmemory.snow_person_spawn_egg": "Яйцо призыва снежного человека",
   "item.seaofmemory.plush_hare_spawn_egg": "Яйцо призыва плюшевого зайца",
   "item.seaofmemory.button_eye": "Глаз-пуговица",
-  "seaofmemory.configuration.imprintAfterDays": "Запоминание через (дней)"
+  "seaofmemory.configuration.imprintAfterDays": "Запоминание через (дней)",
+  "commands.seaofmemory.cold.fog": "  туман %s × биом %s, темно: %s, один: %s → %s",
+  "commands.seaofmemory.cold.sources": "  смотрят снежных людей: %s (+%s), огонь: %s, яркий свет: %s, рядом кто-то: %s"
 }
