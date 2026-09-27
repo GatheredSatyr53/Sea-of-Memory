@@ -1,0 +1,17 @@
+{
+  "commands.seaofmemory.fog.get": "Плотность тумана: %s (стремится к %s) — %s",
+  "commands.seaofmemory.fog.set": "Плотность тумана %s установлена в %s чанках",
+  "commands.seaofmemory.fog.normal": "в норме",
+  "commands.seaofmemory.fog.critical": "КРИТИЧЕСКАЯ",
+  "seaofmemory.configuration.title": "Sea of Memory",
+  "seaofmemory.configuration.fog": "Когнитивный туман",
+  "seaofmemory.configuration.updateInterval": "Интервал обновления",
+  "seaofmemory.configuration.simulationRadius": "Радиус симуляции",
+  "seaofmemory.configuration.riseRate": "Скорость сгущения",
+  "seaofmemory.configuration.fallRate": "Скорость рассеивания",
+  "commands.seaofmemory.cold.get": "%s: холод %s / 100",
+  "commands.seaofmemory.cold.set": "Холод %s установлен для игроков: %s",
+  "seaofmemory.configuration.cold": "Холод",
+  "seaofmemory.configuration.riseMultiplier": "Множитель нарастания",
+  "seaofmemory.configuration.freezeDamage": "Урон от замерзания"
+}

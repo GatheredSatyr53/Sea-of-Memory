@@ -1,0 +1,17 @@
+{
+  "commands.seaofmemory.fog.get": "Fog density: %s (drifting towards %s) - %s",
+  "commands.seaofmemory.fog.set": "Set fog density to %s in %s chunks",
+  "commands.seaofmemory.fog.normal": "normal",
+  "commands.seaofmemory.fog.critical": "CRITICAL",
+  "seaofmemory.configuration.title": "Sea of Memory",
+  "seaofmemory.configuration.fog": "Cognitive Fog",
+  "seaofmemory.configuration.updateInterval": "Update Interval",
+  "seaofmemory.configuration.simulationRadius": "Simulation Radius",
+  "seaofmemory.configuration.riseRate": "Rise Rate",
+  "seaofmemory.configuration.fallRate": "Fall Rate",
+  "commands.seaofmemory.cold.get": "%s: cold %s / 100",
+  "commands.seaofmemory.cold.set": "Set cold to %s for %s players",
+  "seaofmemory.configuration.cold": "Cold",
+  "seaofmemory.configuration.riseMultiplier": "Rise Multiplier",
+  "seaofmemory.configuration.freezeDamage": "Freeze Damage"
+}
