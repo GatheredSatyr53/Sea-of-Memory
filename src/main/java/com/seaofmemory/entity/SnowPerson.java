@@ -213,6 +213,18 @@ public class SnowPerson extends Monster {
     }
 
     /**
+     * Backs away from a source of something it cannot bear, such as a detransmogrifier's light.
+     */
+    public void shyFrom(Vec3 source) {
+        Vec3 away = DefaultRandomPos.getPosAway(this, RETREAT_DISTANCE, 4, source);
+        if (away != null) {
+            lure = null;
+            lureTicks = 0;
+            getNavigation().moveTo(away.x, away.y, away.z, RETREAT_SPEED);
+        }
+    }
+
+    /**
      * The nearest fire, lava or other heat source within {@link #HEAT_RADIUS}, if any.
      */
     private BlockPos nearbyHeat() {

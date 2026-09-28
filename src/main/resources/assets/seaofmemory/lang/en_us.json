@@ -44,5 +44,6 @@
   "commands.seaofmemory.overtime.scheduled": "The next Overtime falls on day %s",
   "seaofmemory.configuration.overtime": "Overtime",
   "seaofmemory.configuration.intervalDays": "Days Between",
-  "seaofmemory.configuration.durationTicks": "Duration (ticks)"
+  "seaofmemory.configuration.durationTicks": "Duration (ticks)",
+  "block.seaofmemory.dtm_lamp": "Detransmogrifier Lamp"
 }

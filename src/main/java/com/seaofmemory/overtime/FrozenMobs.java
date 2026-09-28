@@ -80,6 +80,19 @@ public final class FrozenMobs {
         }
     }
 
+    /**
+     * Brings a statue back to life before the Overtime is over, as a detransmogrifier's light does.
+     * It stays awake until its chunk is reloaded during the Overtime.
+     */
+    public static void wake(Mob mob) {
+        if (isFrozen(mob) && mob.level() instanceof ServerLevel level) {
+            thaw(mob);
+            level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, Blocks.ICE.defaultBlockState()),
+                    mob.getX(), mob.getY() + mob.getBbHeight() / 2, mob.getZ(), 20, mob.getBbWidth() / 2, mob.getBbHeight() / 3, mob.getBbWidth() / 2, 0.05);
+            level.playSound(null, mob.blockPosition(), SoundEvents.GLASS_BREAK, SoundSource.NEUTRAL, 0.6f, 1.4f);
+        }
+    }
+
     static void thaw(Mob mob) {
         if (!isFrozen(mob)) {
             return;

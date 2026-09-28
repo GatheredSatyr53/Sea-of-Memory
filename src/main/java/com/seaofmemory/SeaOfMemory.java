@@ -6,6 +6,7 @@ import com.mojang.logging.LogUtils;
 import com.mojang.serialization.MapCodec;
 import com.seaofmemory.beacon.FogBeaconBlock;
 import com.seaofmemory.cold.Cold;
+import com.seaofmemory.dtm.DtmLampBlock;
 import com.seaofmemory.entity.ModEntities;
 import com.seaofmemory.fog.CognitiveFog;
 import com.seaofmemory.overtime.FrozenMobs;
@@ -50,6 +51,14 @@ public class SeaOfMemory {
             .pushReaction(PushReaction.BLOCK)
             .lightLevel(state -> state.getValue(FogBeaconBlock.LIT) ? 15 : 0));
     public static final DeferredItem<BlockItem> FOG_BEACON_ITEM = ITEMS.registerSimpleBlockItem("fog_beacon", FOG_BEACON);
+
+    public static final DeferredBlock<DtmLampBlock> DTM_LAMP = BLOCKS.registerBlock("dtm_lamp", DtmLampBlock::new, p -> p
+            .mapColor(MapColor.WARPED_WART_BLOCK)
+            .strength(1.5f)
+            .sound(SoundType.COPPER)
+            .noOcclusion()
+            .lightLevel(state -> state.getValue(DtmLampBlock.LIT) ? 12 : 0));
+    public static final DeferredItem<BlockItem> DTM_LAMP_ITEM = ITEMS.registerSimpleBlockItem("dtm_lamp", DTM_LAMP);
 
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> TAB = CREATIVE_MODE_TABS.register("main", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup.seaofmemory"))

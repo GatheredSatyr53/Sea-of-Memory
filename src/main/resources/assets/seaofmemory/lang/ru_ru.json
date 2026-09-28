@@ -44,5 +44,6 @@
   "commands.seaofmemory.overtime.scheduled": "Следующий Овертайм наступит в день %s",
   "seaofmemory.configuration.overtime": "Овертайм",
   "seaofmemory.configuration.intervalDays": "Дней между",
-  "seaofmemory.configuration.durationTicks": "Длительность (тиков)"
+  "seaofmemory.configuration.durationTicks": "Длительность (тиков)",
+  "block.seaofmemory.dtm_lamp": "ДТМ-фонарь"
 }

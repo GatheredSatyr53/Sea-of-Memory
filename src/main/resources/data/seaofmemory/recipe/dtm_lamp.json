@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "P": "minecraft:prismarine_crystals",
+    "G": "minecraft:glowstone_dust",
+    "C": "minecraft:copper_ingot",
+    "I": "minecraft:iron_ingot"
+  },
+  "pattern": [
+    "CPC",
+    "PGP",
+    "CIC"
+  ],
+  "result": {
+    "id": "seaofmemory:dtm_lamp"
+  }
+}

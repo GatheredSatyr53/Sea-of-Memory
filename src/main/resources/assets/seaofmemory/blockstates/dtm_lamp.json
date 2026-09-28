@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=false": {
+      "model": "seaofmemory:block/dtm_lamp"
+    },
+    "lit=true": {
+      "model": "seaofmemory:block/dtm_lamp_on"
+    }
+  }
+}

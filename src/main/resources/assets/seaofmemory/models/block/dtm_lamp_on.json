@@ -1,0 +1,6 @@
+{
+  "parent": "seaofmemory:block/dtm_lamp",
+  "textures": {
+    "glass": "minecraft:block/sea_lantern"
+  }
+}
