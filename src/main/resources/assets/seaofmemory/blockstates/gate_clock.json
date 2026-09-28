@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "seaofmemory:block/gate_clock"
+    }
+  }
+}

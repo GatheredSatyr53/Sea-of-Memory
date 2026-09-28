@@ -12,6 +12,9 @@ import com.seaofmemory.eurydice.ConcentrateItem;
 import com.seaofmemory.eurydice.HollowCrystalItem;
 import com.seaofmemory.fog.CognitiveFog;
 import com.seaofmemory.overtime.FrozenMobs;
+import com.seaofmemory.overtime.GateTests;
+import com.seaofmemory.overtime.GateVillage;
+import com.seaofmemory.overtime.GateClockBlock;
 import com.seaofmemory.sea.Absorption;
 import com.seaofmemory.sea.MemoryDensityFunction;
 import com.seaofmemory.sea.MemoryGraveBlock;
@@ -67,6 +70,17 @@ public class SeaOfMemory {
             .lightLevel(state -> state.getValue(DtmLampBlock.LIT) ? 12 : 0));
     public static final DeferredItem<BlockItem> DTM_LAMP_ITEM = ITEMS.registerSimpleBlockItem("dtm_lamp", DTM_LAMP);
 
+    // The Gates' black clock: rises by the water during the Overtime, cannot be broken; no item (see GateClockBlock).
+    public static final DeferredBlock<GateClockBlock> GATE_CLOCK = BLOCKS.registerBlock("gate_clock", GateClockBlock::new, p -> p
+            .mapColor(MapColor.COLOR_BLACK)
+            .strength(-1f, 3600000f)
+            .sound(SoundType.NETHERITE_BLOCK)
+            .noOcclusion()
+            .noLootTable()
+            .pushReaction(PushReaction.BLOCK)
+            .lightLevel(state -> 10));
+    // What the clock becomes when pulled out of the stone of Gates that held.
+
     // Where the Eurydice ritual raises what sank in the fog. Cannot be broken, only opened (see MemoryGraveBlock); no item.
     public static final DeferredBlock<MemoryGraveBlock> MEMORY_GRAVE = BLOCKS.registerBlock("memory_grave", MemoryGraveBlock::new, p -> p
             .mapColor(MapColor.DEEPSLATE)
@@ -108,6 +122,9 @@ public class SeaOfMemory {
         MemoryImprint.ATTACHMENT_TYPES.register(modEventBus);
         ModEntities.ENTITY_TYPES.register(modEventBus);
         FrozenMobs.ATTACHMENT_TYPES.register(modEventBus);
+        GateVillage.STRUCTURE_TYPES.register(modEventBus);
+        GateVillage.STRUCTURE_PIECES.register(modEventBus);
+        GateTests.TEST_FUNCTIONS.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.SERVER, Config.SPEC);
     }

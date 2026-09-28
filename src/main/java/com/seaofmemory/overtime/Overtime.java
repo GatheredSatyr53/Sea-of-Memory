@@ -10,6 +10,7 @@ import com.seaofmemory.SeaOfMemory;
 import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -42,6 +43,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 public final class Overtime extends SavedData {
     private static final long DAY_TICKS = 24000;
     private static final long MIDNIGHT = 18000;
+    // The sky stays clear a little after the Overtime too, so rain does not fall the moment the world breathes out.
+    private static final int CLEAR_AFTER = 1200;
 
     private static final Codec<Overtime> CODEC = RecordCodecBuilder.create(i -> i.group(
             Codec.LONG.fieldOf("next_day").forGetter(o -> o.nextDay),
@@ -97,9 +100,13 @@ public final class Overtime extends SavedData {
         Overtime state = get(server);
         long total = overworld.clockManager().getTotalTicks(clock);
         long day = total / DAY_TICKS;
+        Gates.tick(overworld, state.active);
         if (state.active) {
             if (overworld.getGameTime() >= state.endsAt) {
                 end(server);
+            } else if (overworld.isRaining() || overworld.isThundering()) {
+                // Not even a /weather gets through: the sky is as still as the rest.
+                stillSky(server, (int) (state.endsAt - overworld.getGameTime()));
             }
             return;
         }
@@ -135,9 +142,24 @@ public final class Overtime extends SavedData {
         state.setDirty();
 
         FrozenMobs.freezeAllLoaded(overworld);
+        stillSky(server, Config.OVERTIME_DURATION_TICKS.getAsInt());
         announce(overworld, "seaofmemory.overtime.start", 0.5f);
         PacketDistributor.sendToAllPlayers(new OvertimePayload(true));
         SeaOfMemory.LOGGER.info("Overtime began");
+    }
+
+    /**
+     * No rain and no storm while the world stands still: they stop at once, not fading out, and stay away until
+     * a little after the Overtime.
+     */
+    private static void stillSky(MinecraftServer server, int ticks) {
+        ServerLevel overworld = server.overworld();
+        server.setWeatherParameters(ticks + CLEAR_AFTER, 0, false, false);
+        overworld.setRainLevel(0f);
+        overworld.setThunderLevel(0f);
+        server.getPlayerList().broadcastAll(new ClientboundGameEventPacket(ClientboundGameEventPacket.STOP_RAINING, 0f), overworld.dimension());
+        server.getPlayerList().broadcastAll(new ClientboundGameEventPacket(ClientboundGameEventPacket.RAIN_LEVEL_CHANGE, 0f), overworld.dimension());
+        server.getPlayerList().broadcastAll(new ClientboundGameEventPacket(ClientboundGameEventPacket.THUNDER_LEVEL_CHANGE, 0f), overworld.dimension());
     }
 
     /**
@@ -160,6 +182,7 @@ public final class Overtime extends SavedData {
         state.setDirty();
 
         FrozenMobs.thawAllLoaded(overworld);
+        Gates.onOvertimeEnd(overworld);
         announce(overworld, "seaofmemory.overtime.end", 0.7f);
         PacketDistributor.sendToAllPlayers(new OvertimePayload(false));
         SeaOfMemory.LOGGER.info("Overtime ended; the next one falls on day {}", state.nextDay);

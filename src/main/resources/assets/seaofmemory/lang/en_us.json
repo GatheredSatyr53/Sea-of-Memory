@@ -58,5 +58,10 @@
   "block.seaofmemory.memory_grave": "Memory Grave",
   "seaofmemory.grave.woken": "Memory does not give things back without a fight.",
   "seaofmemory.grave.guarded": "Its guardians are still here.",
-  "seaofmemory.grave.sank": "What you carried stays in the fog, at a grave where you fell: %s %s %s"
+  "seaofmemory.grave.sank": "What you carried stays in the fog, at a grave where you fell: %s %s %s",
+  "block.seaofmemory.gate_clock": "Gate Clock",
+  "seaofmemory.gates.status": "Next wave in %s s. The Gates hold: %s of %s",
+  "seaofmemory.gates.silent": "The clock is silent.",
+  "seaofmemory.gates.fallen": "The Gates have fallen.",
+  "seaofmemory.gates.held": "The Gates held."
 }

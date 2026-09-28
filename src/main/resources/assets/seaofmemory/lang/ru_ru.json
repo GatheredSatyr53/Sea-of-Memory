@@ -58,5 +58,10 @@
   "block.seaofmemory.memory_grave": "Надгробие памяти",
   "seaofmemory.grave.woken": "Память не отдаёт своё без боя.",
   "seaofmemory.grave.guarded": "Стражи ещё здесь.",
-  "seaofmemory.grave.sank": "Всё, что было при тебе, осталось в тумане, у надгробия там, где ты пал: %s %s %s"
+  "seaofmemory.grave.sank": "Всё, что было при тебе, осталось в тумане, у надгробия там, где ты пал: %s %s %s",
+  "block.seaofmemory.gate_clock": "Часы Врат",
+  "seaofmemory.gates.status": "До волны: %s с. Врата держатся: %s из %s",
+  "seaofmemory.gates.silent": "Часы молчат.",
+  "seaofmemory.gates.fallen": "Врата пали.",
+  "seaofmemory.gates.held": "Врата выстояли."
 }

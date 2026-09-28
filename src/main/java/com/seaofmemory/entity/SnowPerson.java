@@ -3,6 +3,7 @@ package com.seaofmemory.entity;
 import com.seaofmemory.Config;
 import com.seaofmemory.cold.Cold;
 import com.seaofmemory.fog.CognitiveFog;
+import com.seaofmemory.overtime.Overtime;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -15,6 +16,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
@@ -57,6 +59,11 @@ public class SnowPerson extends Monster {
     private static final float HIT_COLD = 8f;
     // How long they keep heading for a light or a noise before losing interest.
     private static final int LURE_TICKS = 400;
+    private static final int MARCH_TICKS = 40;
+    private static final double MARCH_SPEED = 1.4;
+    // On the march: how close someone has to be to be turned on, and how far off they are let go again.
+    private static final double MARCH_ENGAGE = 6;
+    private static final double MARCH_GIVE_UP = 10;
     private static final int LIGHT_SCAN_RADIUS = 16;
     private static final int LIGHT_SCAN_SAMPLES = 16;
     private static final int ATTRACTIVE_LIGHT = 10;
@@ -66,6 +73,12 @@ public class SnowPerson extends Monster {
     private static final double RETREAT_SPEED = 1.2;
 
     private BlockPos lure;
+    // Violent: going somewhere matters more to it than being afraid, and it does not turn back from a detransmogrifier
+    // while it has a goal. All of them are, during the Overtime.
+    private boolean violent;
+    // Driven somewhere as one of a crowd, such as a wave across the Gates: kept up by whoever drives it, so it
+    // lapses on its own if they stop. Not saved.
+    private int marchTicks;
     private int lureTicks;
 
     public SnowPerson(EntityType<? extends SnowPerson> type, Level level) {
@@ -94,8 +107,10 @@ public class SnowPerson extends Monster {
         goalSelector.addGoal(6, new WaterAvoidingRandomStrollGoal(this, 0.6));
         goalSelector.addGoal(7, new LookAtPlayerGoal(this, Player.class, (float) GAZE_RANGE));
         targetSelector.addGoal(1, new HurtByTargetGoal(this).setAlertOthers());
-        targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true));
-        targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, AbstractVillager.class, true));
+        // On the march, only someone right in the way is worth turning for; people further off are not.
+        targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true,
+                (target, level) -> !marching() || distanceToSqr(target) <= MARCH_ENGAGE * MARCH_ENGAGE));
+        targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, AbstractVillager.class, true, (target, level) -> !marching()));
     }
 
     @Override
@@ -130,9 +145,39 @@ public class SnowPerson extends Monster {
         lureTicks = LURE_TICKS;
     }
 
+    public boolean isViolent() {
+        return violent;
+    }
+
+    /**
+     * Sends this one on to the given spot as one of a crowd on the march: it keeps going, turning only for someone
+     * right in its way. To be repeated while the march lasts.
+     */
+    public void march(BlockPos pos) {
+        lure(pos);
+        marchTicks = MARCH_TICKS;
+    }
+
+    public void stopMarching() {
+        marchTicks = 0;
+    }
+
+    public boolean marching() {
+        return marchTicks > 0;
+    }
+
     @Override
     protected void customServerAiStep(ServerLevel level) {
         super.customServerAiStep(level);
+        violent = Overtime.isActive(level);
+        if (marchTicks > 0) {
+            marchTicks--;
+            // Whatever it went after, if it has fallen behind or it is not in the way, the march goes on.
+            LivingEntity target = getTarget();
+            if (target != null && (target instanceof AbstractVillager || distanceToSqr(target) > MARCH_GIVE_UP * MARCH_GIVE_UP)) {
+                setTarget(null);
+            }
+        }
         if (lureTicks > 0 && --lureTicks == 0) {
             lure = null;
         }
@@ -246,6 +291,9 @@ public class SnowPerson extends Monster {
      * Backs away from a source of something it cannot bear, such as a detransmogrifier's light.
      */
     public void shyFrom(Vec3 source) {
+        if (violent && (lure != null || getTarget() != null)) {
+            return;
+        }
         Vec3 away = DefaultRandomPos.getPosAway(this, RETREAT_DISTANCE, 4, source);
         if (away != null) {
             lure = null;
@@ -287,7 +335,9 @@ public class SnowPerson extends Monster {
 
         @Override
         public boolean canUse() {
-            if (mob.tickCount % 10 != 0) {
+            // Goals are looked at every other tick, and on which ones depends on the mob's id, so a check
+            // on tickCount % 10 would never come for half of them. About every tenth tick, whatever the id.
+            if (mob.getRandom().nextInt(5) != 0) {
                 return false;
             }
             BlockPos heat = mob.nearbyHeat();
@@ -308,7 +358,10 @@ public class SnowPerson extends Monster {
      * Walks towards the current lure, then stands there staring until it loses interest.
      */
     private static final class FollowLureGoal extends Goal {
+        // In goal ticks, which come every other game tick: about every ten ticks.
+        private static final int REPATH_TICKS = 5;
         private final SnowPerson mob;
+        private int repath;
 
         FollowLureGoal(SnowPerson mob) {
             this.mob = mob;
@@ -321,9 +374,22 @@ public class SnowPerson extends Monster {
         }
 
         @Override
+        public void start() {
+            repath = 0;
+        }
+
+        @Override
         public void tick() {
-            if (mob.lure != null && mob.tickCount % 10 == 0 && mob.blockPosition().distSqr(mob.lure) > 4) {
-                mob.getNavigation().moveTo(mob.lure.getX() + 0.5, mob.lure.getY(), mob.lure.getZ() + 0.5, 0.9);
+            // Its own countdown: goals tick every other tick, on odd or even ones by the mob's id,
+            // so a check on tickCount % 10 would never come for half of them and they would stand still.
+            if (--repath > 0) {
+                return;
+            }
+            repath = REPATH_TICKS;
+            // On the march right up to the spot: the last one is by the clock, and two blocks short of it may be too far off.
+            if (mob.lure != null && mob.blockPosition().distSqr(mob.lure) > (mob.marching() ? 1 : 4)) {
+                // On the march they press on; drawn by a light or a noise they only drift towards it.
+                mob.getNavigation().moveTo(mob.lure.getX() + 0.5, mob.lure.getY(), mob.lure.getZ() + 0.5, mob.marching() ? MARCH_SPEED : 0.9);
             }
         }
 

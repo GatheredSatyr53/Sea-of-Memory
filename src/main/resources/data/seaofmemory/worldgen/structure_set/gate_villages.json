@@ -1,0 +1,18 @@
+{
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 928031742,
+    "spacing": 40,
+    "separation": 16,
+    "exclusion_zone": {
+      "other_set": "minecraft:villages",
+      "chunk_count": 6
+    }
+  },
+  "structures": [
+    {
+      "structure": "seaofmemory:gate_village",
+      "weight": 1
+    }
+  ]
+}

@@ -30,8 +30,9 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
- * A detransmogrifier lamp ("ДТМ") from "Овертайм": its turquoise light weakens projections, so snow people
- * melt in it and back away, and the plush hare grows weak and slow.
+ * A detransmogrifier lamp ("ДТМ") from "Овертайм": its turquoise light weakens projections. It is not strong enough
+ * to hurt them: a snow person backs away from it, and a violent one with somewhere to go pushes through, but slowly;
+ * the plush hare grows weak and slow.
  * <p>
  * But it also wakes the frozen. During the Overtime every statue in its light comes back to life:
  * zombies hunt again, villagers panic. It protects from the fog and undoes the ice, both at once.
@@ -43,7 +44,6 @@ public class DtmLampBlock extends Block {
 
     private static final int PULSE_TICKS = 20;
     private static final double RADIUS = 8;
-    private static final float MELT_DAMAGE = 3f;
     private static final int WEAKEN_TICKS = PULSE_TICKS * 2;
     private static final int TURQUOISE = 0x2EC4B6;
 
@@ -96,7 +96,7 @@ public class DtmLampBlock extends Block {
         double radiusSq = RADIUS * RADIUS;
         for (Mob mob : level.getEntitiesOfClass(Mob.class, area, mob -> mob.isAlive() && mob.distanceToSqr(center) <= radiusSq)) {
             if (mob instanceof SnowPerson snowPerson) {
-                snowPerson.hurtServer(level, level.damageSources().magic(), MELT_DAMAGE);
+                snowPerson.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, WEAKEN_TICKS, 2, true, true));
                 snowPerson.shyFrom(center);
             } else if (mob instanceof PlushHare hare) {
                 hare.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, WEAKEN_TICKS, 1, true, true));
