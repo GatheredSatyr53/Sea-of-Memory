@@ -92,6 +92,20 @@ public final class GateTests {
 
         BlockPos lintel = layout.at(layout.length() + 1, 0, GateLayout.DECK_Y + GateLayout.ARCH_HEIGHT + 1);
         check(helper, level.getBlockState(lintel).is(Blocks.DEEPSLATE_BRICKS), "No arch over the far end at " + lintel);
+        // The fog keeps them in the settlement; ahead there is only the arch.
+        check(helper, Gates.withinFog(level, layout, Vec3.atCenterOf(layout.clock())), "The clock is outside the fog's bounds");
+        check(helper, Gates.withinFog(level, layout, Vec3.atCenterOf(layout.at(GateVillage.SQUARE_O, 0, 0))), "The square is outside the fog's bounds");
+        check(helper, Gates.withinFog(level, layout, Vec3.atCenterOf(layout.farEnd())), "The arch is outside the fog's bounds");
+        check(helper, !Gates.withinFog(level, layout, Vec3.atCenterOf(layout.at(-60, 0, 0))), "Far behind the houses is inside the fog's bounds");
+        check(helper, !Gates.withinFog(level, layout, Vec3.atCenterOf(layout.at(layout.length() + 4, 10, 0))), "Past the far bank beside the arch is inside the fog's bounds");
+
+        // When they fall, the fog pours into the settlement.
+        Gates.topple(level, layout);
+        BlockPos square = layout.at(GateVillage.SQUARE_O, 0, 0);
+        float flooded = CognitiveFog.getDensity(level.getChunkAt(square));
+        check(helper, flooded >= 0.9f, "The fog did not pour into the settlement: " + flooded + " at the square");
+        check(helper, level.getBlockState(layout.clock()).is(Blocks.CHISELED_POLISHED_BLACKSTONE), "The fallen Gates are not a ruin again");
+
         Gates.lower(level, layout);
         check(helper, level.getBlockState(layout.clock()).is(Blocks.CHISELED_POLISHED_BLACKSTONE), "The clock did not go back to a stump");
         int dropped = level.getEntitiesOfClass(ItemEntity.class, area).size();

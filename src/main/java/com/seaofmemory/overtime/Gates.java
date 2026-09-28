@@ -2,7 +2,11 @@ package com.seaofmemory.overtime;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -11,12 +15,14 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.seaofmemory.SeaOfMemory;
 import com.seaofmemory.entity.ModEntities;
 import com.seaofmemory.entity.SnowPerson;
+import com.seaofmemory.fog.CognitiveFog;
 import com.seaofmemory.sea.FogWorld;
 
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.UUIDUtil;
+import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -28,6 +34,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.LivingEntity;
@@ -55,6 +62,8 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 
 /**
@@ -74,6 +83,21 @@ import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 public final class Gates extends SavedData {
     private static final int SCAN_INTERVAL = 200;
     private static final int PORTAL_INTERVAL = 4;
+    // In the fog: from how far the way back glimmers, and how often.
+    private static final double WAY_BACK_SEEN = 32;
+    private static final int WAY_BACK_GLIMMER = 12;
+    private static final int GROUND_SEARCH = 24;
+    // The fog's bounds around the settlement, in blocks: behind the shore past the houses, to each side of the bridge's
+    // line, and in front just past the far bank (measured from the arch).
+    private static final int FOG_BEHIND = 38;
+    private static final int FOG_SIDE = 24;
+    private static final double FOG_FRONT = 1;
+    // After the Gates fall: the fog in the settlement, and one more through the arch this often, up to so many at once.
+    private static final float FLOOD = 0.9f;
+    private static final int HORDE_INTERVAL = 60;
+    private static final int HORDE_CAP = 12;
+    // How near the edge, in blocks, the world starts turning to its negative.
+    private static final double EDGE_NEAR = 8;
     // How far ahead along the bridge a snow person of a wave is sent each second.
     private static final double STEP = 7;
     // How far around each player, in chunks, settlements are looked for.
@@ -169,6 +193,12 @@ public final class Gates extends SavedData {
         final BlockPos farEnd;
         final List<GateLayout.Part> parts;
         Run run;
+        // Players inside the fog's bounds during this Overtime, and the last place each was inside. Not saved.
+        final Map<UUID, Vec3> confined = new HashMap<>();
+        // How near the edge each of them was last told they are.
+        final Map<UUID, Float> nearness = new HashMap<>();
+        // Those that came through after the Gates fell. Not saved: after a reload the count starts afresh.
+        final Set<UUID> horde = new HashSet<>();
 
         /**
          * The middle of the deck by the clock: where the waves are headed, and where the Gates leave what they give.
@@ -243,10 +273,23 @@ public final class Gates extends SavedData {
         if (time % SCAN_INTERVAL == 0) {
             data.findSettlements(overworld);
         }
+        if (overtime) {
+            for (Site site : data.sites) {
+                if (overworld.isLoaded(site.farEnd)) {
+                    confine(overworld, site);
+                }
+            }
+        }
         if (overtime && time % PORTAL_INTERVAL == 0) {
             for (Site site : data.sites) {
                 if (site.run != null && overworld.isLoaded(site.farEnd)) {
                     portal(overworld, site);
+                }
+            }
+            ServerLevel fog = overworld.getServer().getLevel(FogWorld.KEY);
+            if (fog != null && !fog.players().isEmpty()) {
+                for (Site site : data.sites) {
+                    wayBack(fog, site, time);
                 }
             }
         }
@@ -260,6 +303,10 @@ public final class Gates extends SavedData {
                 }
                 if (site.run != null) {
                     data.hold(overworld, site);
+                }
+                if (site.fallen) {
+                    flood(overworld, site);
+                    breakThrough(overworld, site, time);
                 }
             }
             data.setDirty();
@@ -327,6 +374,23 @@ public final class Gates extends SavedData {
                 ghost.march(nextStep(site, ghost));
             }
         });
+    }
+
+    /**
+     * Whether a place is inside the fog's bounds around these Gates. For the game tests.
+     */
+    static boolean withinFog(ServerLevel level, GateLayout layout, Vec3 pos) {
+        BlockPos origin = layout.at(0, 0, 0);
+        return get(level.getServer()).sites.stream().filter(s -> s.origin.equals(origin)).findFirst().map(site -> withinFog(site, pos)).orElse(false);
+    }
+
+    /**
+     * Brings the Gates of one settlement down, as a wave that breaks through for the last time would. For the game tests.
+     */
+    static void topple(ServerLevel level, GateLayout layout) {
+        Gates data = get(level.getServer());
+        BlockPos origin = layout.at(0, 0, 0);
+        data.sites.stream().filter(s -> s.origin.equals(origin)).findFirst().ifPresent(site -> data.fall(level, site));
     }
 
     /**
@@ -470,6 +534,69 @@ public final class Gates extends SavedData {
         }
     }
 
+    /**
+     * The arch goes both ways for people: in the fog, where it stands in the real world, there is a way back onto the
+     * bridge, and it glimmers so that one who stepped through by mistake can find it. Not for the projections:
+     * the fog does not let them out a second time.
+     */
+    private static void wayBack(ServerLevel fog, Site site, long time) {
+        int ground = groundUnderArch(fog, site);
+        Vec3 arch = new Vec3(site.farEnd.getX() + 0.5, ground, site.farEnd.getZ() + 0.5);
+        for (ServerPlayer player : List.copyOf(fog.players())) {
+            if (player.isSpectator() || player.position().distanceToSqr(arch) > WAY_BACK_SEEN * WAY_BACK_SEEN) {
+                continue;
+            }
+            Vec3 pos = player.position();
+            // Back into the arch from the far side, as if walking back onto the bridge.
+            if (site.along(pos) <= 0 && site.along(pos) >= -2 && Math.abs(site.across(pos)) < GateLayout.ARCH_HALF_WIDTH
+                    && pos.y >= ground - 2 && pos.y <= ground + GateLayout.ARCH_HEIGHT + 2) {
+                BlockPos onBridge = site.farEnd.relative(site.out().getOpposite(), 2);
+                if (FogWorld.release(player, onBridge)) {
+                    player.level().playSound(null, player.blockPosition(), SoundEvents.SNOW_BREAK, SoundSource.PLAYERS, 1f, 1.2f);
+                }
+                continue;
+            }
+            if (time % WAY_BACK_GLIMMER == 0) {
+                glimmer(fog, site, player, ground);
+            }
+        }
+    }
+
+    /**
+     * Where the arch stands in the fog. The fog world may have taken a copy of the arch itself, so not the top of the
+     * column, which would be its lintel: the first free place over firm ground, looking down from under the lintel.
+     */
+    private static int groundUnderArch(ServerLevel fog, Site site) {
+        BlockPos.MutableBlockPos pos = site.farEnd.mutable().move(Direction.UP, GateLayout.ARCH_HEIGHT - 1);
+        for (int i = 0; i < GROUND_SEARCH; i++) {
+            BlockPos below = pos.below();
+            if (!fog.getBlockState(pos).isSolid() && fog.getBlockState(below).isSolid()) {
+                return pos.getY();
+            }
+            pos.move(Direction.DOWN);
+        }
+        // Nothing to stand on below (open water, a pit): where it stands in the real world.
+        return site.farEnd.getY();
+    }
+
+    /**
+     * The arch's outline in turquoise sparks, to the one player only.
+     */
+    private static void glimmer(ServerLevel fog, Site site, ServerPlayer player, int ground) {
+        Direction side = site.out().getClockWise();
+        double x = site.farEnd.getX() + 0.5;
+        double z = site.farEnd.getZ() + 0.5;
+        DustParticleOptions spark = new DustParticleOptions(0x2EC4B6, 1.2f);
+        for (int w = -GateLayout.ARCH_HALF_WIDTH; w <= GateLayout.ARCH_HALF_WIDTH; w++) {
+            for (int y = 0; y <= GateLayout.ARCH_HEIGHT + 1; y++) {
+                boolean frame = Math.abs(w) == GateLayout.ARCH_HALF_WIDTH || y == GateLayout.ARCH_HEIGHT + 1;
+                if (frame) {
+                    fog.sendParticles(player, spark, true, false, x + side.getStepX() * w, ground + y + 0.5, z + side.getStepZ() * w, 2, 0.25, 0.25, 0.25, 0);
+                }
+            }
+        }
+    }
+
     private static void intoFog(ServerLevel level, Entity entity) {
         level.playSound(null, entity.blockPosition(), SoundEvents.SNOW_BREAK, SoundSource.HOSTILE, 1f, 0.6f);
         if (entity instanceof SnowPerson ghost) {
@@ -579,10 +706,68 @@ public final class Gates extends SavedData {
     private void fall(ServerLevel level, Site site) {
         ruin(level, site);
         site.fallen = true;
+        flood(level, site);
         for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class, new AABB(site.clock).inflate(64))) {
             player.sendOverlayMessage(Component.translatable("seaofmemory.gates.fallen"));
         }
         SeaOfMemory.LOGGER.info("The Gates at {} fell", site.clock);
+    }
+
+    // ---- When the Gates have fallen ----
+
+    /**
+     * With the Gates down the fog pours into the settlement and stays for the rest of the Overtime: snow people rise
+     * all over it, and it pulls into itself whoever the Overtime keeps there. Held up every second, since the fog
+     * would otherwise drift back; once the Overtime is over it thins away as fog does.
+     */
+    private static void flood(ServerLevel level, Site site) {
+        for (ChunkPos pos : settlementChunks(site)) {
+            LevelChunk chunk = level.getChunkSource().getChunkNow(pos.x(), pos.z());
+            if (chunk != null && CognitiveFog.getDensity(chunk) < FLOOD) {
+                CognitiveFog.setDensity(chunk, FLOOD);
+            }
+        }
+    }
+
+    /**
+     * The chunks within the Overtime's bounds around the settlement.
+     */
+    private static List<ChunkPos> settlementChunks(Site site) {
+        ChunkPos center = ChunkPos.containing(site.origin);
+        int reach = (FOG_BEHIND + GateLayout.MAX_BRIDGE + FOG_SIDE) / 16 + 2;
+        List<ChunkPos> chunks = new ArrayList<>();
+        for (int dx = -reach; dx <= reach; dx++) {
+            for (int dz = -reach; dz <= reach; dz++) {
+                ChunkPos chunk = new ChunkPos(center.x() + dx, center.z() + dz);
+                if (withinFog(site, new Vec3(chunk.getMiddleBlockX() + 0.5, site.origin.getY(), chunk.getMiddleBlockZ() + 0.5))) {
+                    chunks.add(chunk);
+                }
+            }
+        }
+        return chunks;
+    }
+
+    /**
+     * Nothing holds the arch any more: they keep coming through it till the Overtime is over, no longer for the clock
+     * but for the people frozen in the settlement, and for whoever stands in their way.
+     */
+    private static void breakThrough(ServerLevel level, Site site, long time) {
+        site.horde.removeIf(id -> !(level.getEntity(id) instanceof SnowPerson ghost) || !ghost.isAlive());
+        if (time % HORDE_INTERVAL != 0 || site.horde.size() >= HORDE_CAP || !level.isLoaded(site.farEnd)) {
+            return;
+        }
+        int across = level.getRandom().nextInt(3) - 1;
+        BlockPos at = site.farEnd.relative(site.out().getClockWise(), across);
+        SnowPerson ghost = ModEntities.SNOW_PERSON.get().spawn(level, at, EntitySpawnReason.EVENT);
+        if (ghost == null) {
+            return;
+        }
+        ghost.setPersistenceRequired();
+        site.horde.add(ghost.getUUID());
+        level.sendParticles(ParticleTypes.CLOUD, ghost.getX(), ghost.getY() + 1.2, ghost.getZ(), 30, 0.5, 0.8, 0.5, 0.02);
+        level.getEntitiesOfClass(Villager.class, ghost.getBoundingBox().inflate(STATUE_SEARCH), FrozenMobs::isFrozen).stream()
+                .min(Comparator.comparingDouble(ghost::distanceToSqr))
+                .ifPresent(ghost::setTarget);
     }
 
     /**
@@ -598,8 +783,111 @@ public final class Gates extends SavedData {
             }
             ruin(level, site);
             site.fallen = false;
+            site.horde.clear();
+            site.confined.clear();
+            for (UUID id : site.nearness.keySet()) {
+                if (level.getServer().getPlayerList().getPlayer(id) instanceof ServerPlayer player) {
+                    PacketDistributor.sendToPlayer(player, new EdgePayload(0));
+                }
+            }
+            site.nearness.clear();
         }
         data.setDirty();
+    }
+
+    // ---- The fog around the settlement ----
+
+    /**
+     * "Раз в год дедушка приходит на старый мост, чтобы защищать их от того, что может прийти из туманной страны":
+     * the Overtime is where the midnight is, and whoever is at the Gates when it comes stays there till it is over.
+     * The fog stands all round the settlement; over the far bank there is only the way through the arch.
+     */
+    private static boolean withinFog(Site site, Vec3 pos) {
+        double along = site.along(pos);
+        double across = site.across(pos);
+        // The arch, and just past it: the portal takes them from there.
+        if (Math.abs(across) < GateLayout.ARCH_HALF_WIDTH && along <= 3) {
+            return along >= fogBack(site);
+        }
+        return along >= fogBack(site) && along <= FOG_FRONT && Math.abs(across) <= FOG_SIDE;
+    }
+
+    private static double fogBack(Site site) {
+        return site.along(Vec3.atCenterOf(site.origin)) - FOG_BEHIND;
+    }
+
+    /**
+     * Keeps the players inside the bounds in: whoever steps, rides, flies or throws a pearl out of them is back where
+     * they last were inside. Near the edge their world turns to its negative (see EdgeNegative).
+     */
+    private static void confine(ServerLevel level, Site site) {
+        for (ServerPlayer player : level.players()) {
+            if (player.isCreative() || player.isSpectator() || player.isDeadOrDying()) {
+                continue;
+            }
+            UUID id = player.getUUID();
+            if (withinFog(site, player.position())) {
+                site.confined.put(id, player.position());
+                tellNearness(site, player, nearness(site, player.position()));
+            } else if (site.confined.containsKey(id)) {
+                Vec3 back = site.confined.get(id);
+                level.sendParticles(ParticleTypes.CLOUD, player.getX(), player.getY() + 1, player.getZ(), 20, 0.4, 0.6, 0.4, 0.02);
+                player.stopRiding();
+                player.teleportTo(back.x, back.y, back.z);
+                player.setDeltaMovement(Vec3.ZERO);
+                player.hurtMarked = true;
+                player.fallDistance = 0;
+                level.playSound(null, player.blockPosition(), SoundEvents.POWDER_SNOW_STEP, SoundSource.PLAYERS, 1f, 0.5f);
+                player.sendOverlayMessage(Component.translatable("seaofmemory.gates.no_escape"));
+            }
+        }
+    }
+
+    /**
+     * How near the edge a place inside is, from 0 (at least EDGE_NEAR blocks off) to 1 (at the edge). The way
+     * through the arch is no edge.
+     */
+    private static float nearness(Site site, Vec3 pos) {
+        double along = site.along(pos);
+        double across = site.across(pos);
+        double distance = Math.min(along - fogBack(site), FOG_SIDE - Math.abs(across));
+        if (Math.abs(across) >= GateLayout.ARCH_HALF_WIDTH) {
+            distance = Math.min(distance, FOG_FRONT - along);
+        }
+        return (float) Mth.clamp(1 - distance / EDGE_NEAR, 0, 1);
+    }
+
+    private static void tellNearness(Site site, ServerPlayer player, float nearness) {
+        Float told = site.nearness.get(player.getUUID());
+        if (told == null ? nearness > 0 : Math.abs(told - nearness) >= 0.03f || (nearness == 0 && told != 0)) {
+            site.nearness.put(player.getUUID(), nearness);
+            PacketDistributor.sendToPlayer(player, new EdgePayload(nearness));
+        }
+    }
+
+    @SubscribeEvent
+    static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        release(event.getEntity());
+    }
+
+    @SubscribeEvent
+    static void onChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        release(event.getEntity());
+    }
+
+    /**
+     * Death and the fog world end it: a player who comes back from either is not dragged back to the Gates.
+     */
+    private static void release(Player player) {
+        if (player.level().getServer() == null) {
+            return;
+        }
+        for (Site site : get(player.level().getServer()).sites) {
+            site.confined.remove(player.getUUID());
+            if (site.nearness.remove(player.getUUID()) != null && player instanceof ServerPlayer serverPlayer) {
+                PacketDistributor.sendToPlayer(serverPlayer, new EdgePayload(0));
+            }
+        }
     }
 
     @SubscribeEvent

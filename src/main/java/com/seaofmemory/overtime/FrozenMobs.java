@@ -1,5 +1,7 @@
 package com.seaofmemory.overtime;
 
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import com.mojang.serialization.Codec;
@@ -13,6 +15,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.entity.EntityTypeTest;
@@ -23,6 +26,7 @@ import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.EntityTeleportEvent;
 import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
+import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
@@ -45,6 +49,9 @@ public final class FrozenMobs {
             .build());
     // Marks mobs we silenced, so thawing only gives back a voice we took.
     private static final String SILENCED_TAG = SeaOfMemory.MODID + ".silenced";
+    // The ways the world brings new creatures in by itself, which stop during the Overtime.
+    private static final Set<EntitySpawnReason> NO_ARRIVALS = EnumSet.of(
+            EntitySpawnReason.NATURAL, EntitySpawnReason.PATROL, EntitySpawnReason.EVENT, EntitySpawnReason.REINFORCEMENT, EntitySpawnReason.JOCKEY);
 
     private FrozenMobs() {
     }
@@ -126,6 +133,22 @@ public final class FrozenMobs {
             freeze(mob);
         } else {
             thaw(mob);
+        }
+    }
+
+    /**
+     * While the world stands still nothing new comes into it: no night spawns, no patrols, no siege of the village,
+     * no reinforcements. Otherwise they would pile up as statues for the whole Overtime and all wake at once at its end.
+     * Projections still come, and whatever a player brings in on purpose (eggs, spawners, commands).
+     */
+    @SubscribeEvent
+    static void onFinalizeSpawn(FinalizeSpawnEvent event) {
+        Mob mob = event.getEntity();
+        if (!NO_ARRIVALS.contains(event.getSpawnType()) || SeaOfMemory.MODID.equals(BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).getNamespace())) {
+            return;
+        }
+        if (Overtime.isActive(event.getLevel().getLevel())) {
+            event.setSpawnCancelled(true);
         }
     }
 

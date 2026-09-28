@@ -62,6 +62,7 @@
   "block.seaofmemory.gate_clock": "Часы Врат",
   "seaofmemory.gates.status": "До волны: %s с. Врата держатся: %s из %s",
   "seaofmemory.gates.silent": "Часы молчат.",
-  "seaofmemory.gates.fallen": "Врата пали.",
-  "seaofmemory.gates.held": "Врата выстояли."
+  "seaofmemory.gates.fallen": "Врата пали. Туман хлынул в посёлок.",
+  "seaofmemory.gates.held": "Врата выстояли.",
+  "seaofmemory.gates.no_escape": "Овертайм не выпускает."
 }

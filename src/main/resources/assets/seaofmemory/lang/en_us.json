@@ -62,6 +62,7 @@
   "block.seaofmemory.gate_clock": "Gate Clock",
   "seaofmemory.gates.status": "Next wave in %s s. The Gates hold: %s of %s",
   "seaofmemory.gates.silent": "The clock is silent.",
-  "seaofmemory.gates.fallen": "The Gates have fallen.",
-  "seaofmemory.gates.held": "The Gates held."
+  "seaofmemory.gates.fallen": "The Gates have fallen. The fog pours in.",
+  "seaofmemory.gates.held": "The Gates held.",
+  "seaofmemory.gates.no_escape": "The Overtime will not let you go."
 }
