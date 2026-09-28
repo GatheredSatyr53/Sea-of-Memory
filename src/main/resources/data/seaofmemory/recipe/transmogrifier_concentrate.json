@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    "seaofmemory:catalyst",
+    "minecraft:phantom_membrane",
+    "minecraft:fermented_spider_eye",
+    "minecraft:glass_bottle"
+  ],
+  "result": {
+    "id": "seaofmemory:transmogrifier_concentrate"
+  }
+}

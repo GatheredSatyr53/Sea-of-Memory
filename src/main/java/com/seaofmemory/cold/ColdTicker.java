@@ -85,7 +85,7 @@ public final class ColdTicker {
 
         ServerLevel level = player.level();
         float cold = Cold.get(player);
-        float target = target(level, player).target();
+        float target = Math.max(target(level, player).target(), Cold.floor(player));
         float speed = target > cold ? RISE_SPEED * (float) Config.COLD_RISE_MULTIPLIER.getAsDouble() : FALL_SPEED;
         Cold.set(player, Mth.approach(cold, target, speed));
         applyEffects(level, player, Cold.get(player));

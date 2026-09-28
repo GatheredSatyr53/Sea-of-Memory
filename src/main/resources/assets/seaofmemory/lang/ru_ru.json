@@ -47,5 +47,14 @@
   "seaofmemory.configuration.durationTicks": "Длительность (тиков)",
   "block.seaofmemory.dtm_lamp": "ДТМ-фонарь",
   "seaofmemory.configuration.meltBelow": "Уровень таяния",
-  "seaofmemory.configuration.sweepBelow": "Уровень сметания"
+  "seaofmemory.configuration.sweepBelow": "Уровень сметания",
+  "item.seaofmemory.hollow_crystal": "Полый кристалл",
+  "item.seaofmemory.catalyst": "Катализатор",
+  "item.seaofmemory.transmogrifier_concentrate": "Концентрат трансмогрификатора",
+  "seaofmemory.eurydice.cold_forever": "Холод теперь навсегда в вашем сердце.",
+  "seaofmemory.eurydice.cold_water": "Вода слишком холодная. Под ней нужен огонь.",
+  "seaofmemory.eurydice.wrong_world": "У этого места нет копии в тумане.",
+  "seaofmemory.eurydice.begun": "Из воды поднимается туман.",
+  "seaofmemory.eurydice.nothing": "Туман ничего твоего не помнит.",
+  "seaofmemory.eurydice.waiting": "Потерянное ждёт там, где ты утонул в тумане: %s %s %s"
 }

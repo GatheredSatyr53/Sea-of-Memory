@@ -74,6 +74,9 @@ public final class FogWorld {
         if (moved && !(entity instanceof Player)) {
             SeaOfMemory.LOGGER.info("The fog took {} at {}", entity.getName().getString(), entity.blockPosition());
         }
+        if (moved && entity instanceof ServerPlayer player) {
+            EurydiceRitual.onAbsorbed(player, fog);
+        }
         if (moved) {
             // Where they stood, only fog is left.
             from.sendParticles(ParticleTypes.CLOUD, origin.x, origin.y + entity.getBbHeight() / 2, origin.z, 30, 0.4, entity.getBbHeight() / 3, 0.4, 0.02);
@@ -142,7 +145,7 @@ public final class FogWorld {
         for (ItemEntity drop : event.getDrops()) {
             items.add(drop.getItem());
         }
-        SunkenBelongings.get(player.level().getServer()).sink(player.getUUID(), items);
+        SunkenBelongings.get(player.level().getServer()).sink(player.getUUID(), player.blockPosition(), items);
         event.setCanceled(true);
     }
 }

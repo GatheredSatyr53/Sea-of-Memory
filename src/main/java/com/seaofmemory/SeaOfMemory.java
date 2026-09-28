@@ -8,6 +8,8 @@ import com.seaofmemory.beacon.FogBeaconBlock;
 import com.seaofmemory.cold.Cold;
 import com.seaofmemory.dtm.DtmLampBlock;
 import com.seaofmemory.entity.ModEntities;
+import com.seaofmemory.eurydice.ConcentrateItem;
+import com.seaofmemory.eurydice.HollowCrystalItem;
 import com.seaofmemory.fog.CognitiveFog;
 import com.seaofmemory.overtime.FrozenMobs;
 import com.seaofmemory.sea.Absorption;
@@ -19,6 +21,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.material.MapColor;
@@ -59,6 +62,13 @@ public class SeaOfMemory {
             .noOcclusion()
             .lightLevel(state -> state.getValue(DtmLampBlock.LIT) ? 12 : 0));
     public static final DeferredItem<BlockItem> DTM_LAMP_ITEM = ITEMS.registerSimpleBlockItem("dtm_lamp", DTM_LAMP);
+
+    // The Eurydice ritual: a hollow crystal takes some of your warmth and becomes the catalyst for the concentrate.
+    public static final DeferredItem<Item> CATALYST = ITEMS.registerSimpleItem("catalyst");
+    public static final DeferredItem<HollowCrystalItem> HOLLOW_CRYSTAL = ITEMS.registerItem(
+            "hollow_crystal", properties -> new HollowCrystalItem(properties, CATALYST));
+    public static final DeferredItem<ConcentrateItem> TRANSMOGRIFIER_CONCENTRATE = ITEMS.registerItem(
+            "transmogrifier_concentrate", ConcentrateItem::new, properties -> properties.stacksTo(16));
 
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> TAB = CREATIVE_MODE_TABS.register("main", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup.seaofmemory"))

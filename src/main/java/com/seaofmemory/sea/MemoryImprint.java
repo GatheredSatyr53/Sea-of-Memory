@@ -114,6 +114,16 @@ public final class MemoryImprint {
         }
     }
 
+    /**
+     * Imprints the chunk right now, loading the real one if it has to. For when something is about to be put
+     * into the chunk that a later imprint would take for someone's building and overwrite.
+     */
+    static void imprintBlocking(MinecraftServer server, ServerLevel fog, LevelChunk chunk) {
+        if (!chunk.getData(IMPRINTED.get())) {
+            imprint(fog, chunk, server.overworld().getChunk(chunk.getPos().x(), chunk.getPos().z()));
+        }
+    }
+
     private static void imprintWhenReady(MinecraftServer server, ServerLevel fog, LevelChunk chunk) {
         ChunkPos pos = chunk.getPos();
         ServerLevel overworld = server.overworld();

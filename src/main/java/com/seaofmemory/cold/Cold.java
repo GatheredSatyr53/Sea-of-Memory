@@ -33,7 +33,27 @@ public final class Cold {
             .sync((holder, to) -> holder == to, ByteBufCodecs.FLOAT)
             .build());
 
+    // What the Eurydice catalyst leaves behind: cold that never goes away, not even with death.
+    public static final Supplier<AttachmentType<Float>> FLOOR = ATTACHMENT_TYPES.register("cold_floor", () -> AttachmentType.builder(() -> 0f)
+            .serialize(Codec.FLOAT.fieldOf("floor"), floor -> floor > 0f)
+            .copyOnDeath()
+            .build());
+    // Enough to make every day heavier, never enough to freeze a player to death by itself.
+    public static final float MAX_FLOOR = 80f;
+
     private Cold() {
+    }
+
+    /**
+     * The level the player's cold can never drop below.
+     */
+    public static float floor(Player player) {
+        return player.getData(FLOOR.get());
+    }
+
+    public static void raiseFloor(Player player, float amount) {
+        player.setData(FLOOR.get(), Math.min(MAX_FLOOR, floor(player) + amount));
+        set(player, Math.max(get(player), floor(player)));
     }
 
     public static float get(Player player) {

@@ -47,5 +47,14 @@
   "seaofmemory.configuration.durationTicks": "Duration (ticks)",
   "block.seaofmemory.dtm_lamp": "Detransmogrifier Lamp",
   "seaofmemory.configuration.meltBelow": "Melting Level",
-  "seaofmemory.configuration.sweepBelow": "Sweeping Level"
+  "seaofmemory.configuration.sweepBelow": "Sweeping Level",
+  "item.seaofmemory.hollow_crystal": "Hollow Crystal",
+  "item.seaofmemory.catalyst": "Catalyst",
+  "item.seaofmemory.transmogrifier_concentrate": "Transmogrifier Concentrate",
+  "seaofmemory.eurydice.cold_forever": "The cold is in your heart now, for good.",
+  "seaofmemory.eurydice.cold_water": "The water is too cold. It needs fire under it.",
+  "seaofmemory.eurydice.wrong_world": "Nothing here has a copy in the fog.",
+  "seaofmemory.eurydice.begun": "Fog rises from the water.",
+  "seaofmemory.eurydice.nothing": "The fog remembers nothing of yours.",
+  "seaofmemory.eurydice.waiting": "What you lost waits where you drowned in the fog: %s %s %s"
 }

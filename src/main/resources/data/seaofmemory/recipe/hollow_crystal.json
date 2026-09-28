@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "A": "minecraft:amethyst_shard",
+    "Q": "minecraft:quartz",
+    "G": "minecraft:glass"
+  },
+  "pattern": [
+    " A ",
+    "QGQ",
+    " A "
+  ],
+  "result": {
+    "id": "seaofmemory:hollow_crystal"
+  }
+}
