@@ -1,0 +1,106 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "stone": "minecraft:block/cracked_deepslate_bricks",
+    "base": "minecraft:block/cobbled_deepslate",
+    "particle": "minecraft:block/cracked_deepslate_bricks"
+  },
+  "elements": [
+    {
+      "from": [
+        2,
+        0,
+        4
+      ],
+      "to": [
+        14,
+        2,
+        12
+      ],
+      "faces": {
+        "down": {
+          "texture": "#base"
+        },
+        "up": {
+          "texture": "#base"
+        },
+        "north": {
+          "texture": "#base"
+        },
+        "south": {
+          "texture": "#base"
+        },
+        "west": {
+          "texture": "#base"
+        },
+        "east": {
+          "texture": "#base"
+        }
+      }
+    },
+    {
+      "from": [
+        3,
+        2,
+        6
+      ],
+      "to": [
+        13,
+        12,
+        10
+      ],
+      "faces": {
+        "down": {
+          "texture": "#stone"
+        },
+        "up": {
+          "texture": "#stone"
+        },
+        "north": {
+          "texture": "#stone"
+        },
+        "south": {
+          "texture": "#stone"
+        },
+        "west": {
+          "texture": "#stone"
+        },
+        "east": {
+          "texture": "#stone"
+        }
+      }
+    },
+    {
+      "from": [
+        4,
+        12,
+        6
+      ],
+      "to": [
+        12,
+        14,
+        10
+      ],
+      "faces": {
+        "down": {
+          "texture": "#stone"
+        },
+        "up": {
+          "texture": "#stone"
+        },
+        "north": {
+          "texture": "#stone"
+        },
+        "south": {
+          "texture": "#stone"
+        },
+        "west": {
+          "texture": "#stone"
+        },
+        "east": {
+          "texture": "#stone"
+        }
+      }
+    }
+  ]
+}

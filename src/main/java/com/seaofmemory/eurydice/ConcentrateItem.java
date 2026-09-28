@@ -61,7 +61,7 @@ public class ConcentrateItem extends Item {
         level.setBlockAndUpdate(pos, Blocks.CAULDRON.defaultBlockState());
         serverLevel.playSound(null, pos, SoundEvents.LAVA_EXTINGUISH, SoundSource.BLOCKS, 1.2f, 0.6f);
         serverLevel.sendParticles(ParticleTypes.CLOUD, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, 60, 0.6, 0.6, 0.6, 0.05);
-        EurydiceRitual.begin(serverLevel, pos, player);
+        EurydiceRitual.begin(serverLevel, pos);
         player.sendOverlayMessage(Component.translatable("seaofmemory.eurydice.begun"));
         return InteractionResult.SUCCESS;
     }

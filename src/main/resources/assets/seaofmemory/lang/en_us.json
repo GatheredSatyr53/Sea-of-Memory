@@ -55,6 +55,8 @@
   "seaofmemory.eurydice.cold_water": "The water is too cold. It needs fire under it.",
   "seaofmemory.eurydice.wrong_world": "Nothing here has a copy in the fog.",
   "seaofmemory.eurydice.begun": "Fog rises from the water.",
-  "seaofmemory.eurydice.nothing": "The fog remembers nothing of yours.",
-  "seaofmemory.eurydice.waiting": "What you lost waits where you drowned in the fog: %s %s %s"
+  "block.seaofmemory.memory_grave": "Memory Grave",
+  "seaofmemory.grave.woken": "Memory does not give things back without a fight.",
+  "seaofmemory.grave.guarded": "Its guardians are still here.",
+  "seaofmemory.grave.sank": "What you carried stays in the fog, at a grave where you fell: %s %s %s"
 }

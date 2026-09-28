@@ -55,6 +55,8 @@
   "seaofmemory.eurydice.cold_water": "Вода слишком холодная. Под ней нужен огонь.",
   "seaofmemory.eurydice.wrong_world": "У этого места нет копии в тумане.",
   "seaofmemory.eurydice.begun": "Из воды поднимается туман.",
-  "seaofmemory.eurydice.nothing": "Туман ничего твоего не помнит.",
-  "seaofmemory.eurydice.waiting": "Потерянное ждёт там, где ты утонул в тумане: %s %s %s"
+  "block.seaofmemory.memory_grave": "Надгробие памяти",
+  "seaofmemory.grave.woken": "Память не отдаёт своё без боя.",
+  "seaofmemory.grave.guarded": "Стражи ещё здесь.",
+  "seaofmemory.grave.sank": "Всё, что было при тебе, осталось в тумане, у надгробия там, где ты пал: %s %s %s"
 }

@@ -14,6 +14,8 @@ import com.seaofmemory.fog.CognitiveFog;
 import com.seaofmemory.overtime.FrozenMobs;
 import com.seaofmemory.sea.Absorption;
 import com.seaofmemory.sea.MemoryDensityFunction;
+import com.seaofmemory.sea.MemoryGraveBlock;
+import com.seaofmemory.sea.MemoryGraveBlockEntity;
 import com.seaofmemory.sea.MemoryImprint;
 
 import net.minecraft.core.registries.Registries;
@@ -23,6 +25,7 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
@@ -43,6 +46,7 @@ public class SeaOfMemory {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
+    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES = DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, MODID);
     public static final DeferredRegister<MapCodec<? extends DensityFunction>> DENSITY_FUNCTION_TYPES = DeferredRegister.create(Registries.DENSITY_FUNCTION_TYPE, MODID);
 
     public static final DeferredBlock<FogBeaconBlock> FOG_BEACON = BLOCKS.registerBlock("fog_beacon", FogBeaconBlock::new, p -> p
@@ -62,6 +66,17 @@ public class SeaOfMemory {
             .noOcclusion()
             .lightLevel(state -> state.getValue(DtmLampBlock.LIT) ? 12 : 0));
     public static final DeferredItem<BlockItem> DTM_LAMP_ITEM = ITEMS.registerSimpleBlockItem("dtm_lamp", DTM_LAMP);
+
+    // Where the Eurydice ritual raises what sank in the fog. Cannot be broken, only opened (see MemoryGraveBlock); no item.
+    public static final DeferredBlock<MemoryGraveBlock> MEMORY_GRAVE = BLOCKS.registerBlock("memory_grave", MemoryGraveBlock::new, p -> p
+            .mapColor(MapColor.DEEPSLATE)
+            .strength(-1f, 3600000f)
+            .sound(SoundType.DEEPSLATE_BRICKS)
+            .noOcclusion()
+            .noLootTable()
+            .pushReaction(PushReaction.BLOCK));
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<MemoryGraveBlockEntity>> MEMORY_GRAVE_ENTITY =
+            BLOCK_ENTITY_TYPES.register("memory_grave", () -> new BlockEntityType<>(MemoryGraveBlockEntity::new, MEMORY_GRAVE.get()));
 
     // The Eurydice ritual: a hollow crystal takes some of your warmth and becomes the catalyst for the concentrate.
     public static final DeferredItem<Item> CATALYST = ITEMS.registerSimpleItem("catalyst");
@@ -83,6 +98,7 @@ public class SeaOfMemory {
 
     public SeaOfMemory(IEventBus modEventBus, ModContainer modContainer) {
         BLOCKS.register(modEventBus);
+        BLOCK_ENTITY_TYPES.register(modEventBus);
         ITEMS.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);
         DENSITY_FUNCTION_TYPES.register(modEventBus);

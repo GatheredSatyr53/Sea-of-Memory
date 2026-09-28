@@ -1,7 +1,6 @@
 package com.seaofmemory.sea;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,23 +13,25 @@ import com.seaofmemory.SeaOfMemory;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.UUIDUtil;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 
 /**
- * Items of players who died in the fog. They sink into the Sea of Memory instead of dropping, each death's
- * belongings kept together with the place it happened, until the Eurydice ritual brings them back there.
+ * Belongings that sank in the fog before deaths left memory graves. Only read from older saves:
+ * the next time the fog takes their owner, they rise as graves where they sank, and the store empties.
  */
 public final class SunkenBelongings extends SavedData {
     /**
      * One death's belongings.
      *
-     * @param pos where in the fog world they sank; empty for belongings saved before places were remembered
+     * @param pos where in the fog world they sank; empty for the oldest saves, which did not remember it
      */
-    public record Cache(Optional<BlockPos> pos, List<ItemStack> items) {
+    private record Cache(Optional<BlockPos> pos, List<ItemStack> items) {
         static final Codec<Cache> CODEC = RecordCodecBuilder.create(i -> i.group(
                 BlockPos.CODEC.optionalFieldOf("pos").forGetter(Cache::pos),
                 ItemStack.CODEC.listOf().fieldOf("items").forGetter(Cache::items)
@@ -39,7 +40,6 @@ public final class SunkenBelongings extends SavedData {
 
     private static final Codec<SunkenBelongings> CODEC = RecordCodecBuilder.create(i -> i.group(
             Codec.unboundedMap(UUIDUtil.STRING_CODEC, Cache.CODEC.listOf()).optionalFieldOf("caches", Map.of()).forGetter(data -> data.caches),
-            // Older saves kept one pile of items per player, with no place.
             Codec.unboundedMap(UUIDUtil.STRING_CODEC, ItemStack.CODEC.listOf()).optionalFieldOf("belongings", Map.of()).forGetter(data -> Map.of())
     ).apply(i, SunkenBelongings::new));
     private static final SavedDataType<SunkenBelongings> TYPE = new SavedDataType<>(
@@ -55,33 +55,19 @@ public final class SunkenBelongings extends SavedData {
         legacy.forEach((owner, items) -> this.caches.computeIfAbsent(owner, ignored -> new ArrayList<>()).add(new Cache(Optional.empty(), items)));
     }
 
-    public static SunkenBelongings get(MinecraftServer server) {
-        return server.getDataStorage().computeIfAbsent(TYPE);
-    }
-
-    public void sink(UUID owner, BlockPos where, Collection<ItemStack> items) {
-        List<ItemStack> sunk = new ArrayList<>();
-        for (ItemStack stack : items) {
-            if (!stack.isEmpty()) {
-                sunk.add(stack.copy());
-            }
-        }
-        if (sunk.isEmpty()) {
+    /**
+     * Raises the player's old sunken belongings as memory graves, now that the fog has taken them.
+     */
+    static void raiseOld(ServerPlayer player, ServerLevel fog) {
+        SunkenBelongings data = fog.getServer().getDataStorage().computeIfAbsent(TYPE);
+        List<Cache> old = data.caches.remove(player.getUUID());
+        if (old == null) {
             return;
         }
-        caches.computeIfAbsent(owner, ignored -> new ArrayList<>()).add(new Cache(Optional.of(where.immutable()), sunk));
-        setDirty();
-    }
-
-    /**
-     * Takes everything the owner lost to the fog, to be brought back.
-     */
-    public List<Cache> raise(UUID owner) {
-        List<Cache> raised = caches.remove(owner);
-        if (raised == null) {
-            return List.of();
+        data.setDirty();
+        for (Cache cache : old) {
+            BlockPos grave = MemoryGraveBlock.place(fog, cache.pos().orElse(player.blockPosition()), cache.items());
+            player.sendSystemMessage(Component.translatable("seaofmemory.grave.sank", grave.getX(), grave.getY(), grave.getZ()));
         }
-        setDirty();
-        return raised;
     }
 }

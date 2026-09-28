@@ -9,6 +9,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -75,7 +76,7 @@ public final class FogWorld {
             SeaOfMemory.LOGGER.info("The fog took {} at {}", entity.getName().getString(), entity.blockPosition());
         }
         if (moved && entity instanceof ServerPlayer player) {
-            EurydiceRitual.onAbsorbed(player, fog);
+            SunkenBelongings.raiseOld(player, fog);
         }
         if (moved) {
             // Where they stood, only fog is left.
@@ -145,7 +146,12 @@ public final class FogWorld {
         for (ItemEntity drop : event.getDrops()) {
             items.add(drop.getItem());
         }
-        SunkenBelongings.get(player.level().getServer()).sink(player.getUUID(), player.blockPosition(), items);
         event.setCanceled(true);
+        if (items.isEmpty()) {
+            return;
+        }
+        // Nothing is dropped: it all stays in the fog, at a grave where they died.
+        BlockPos grave = MemoryGraveBlock.place((ServerLevel) player.level(), player.blockPosition(), items);
+        player.sendSystemMessage(Component.translatable("seaofmemory.grave.sank", grave.getX(), grave.getY(), grave.getZ()));
     }
 }
