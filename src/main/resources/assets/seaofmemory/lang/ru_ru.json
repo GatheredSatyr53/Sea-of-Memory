@@ -36,5 +36,13 @@
   "commands.seaofmemory.fog.lost.entry": "  %s: %s %s %s, в %s блоках",
   "seaofmemory.configuration.snowPeople": "Снежные люди",
   "seaofmemory.configuration.cap": "Предел вокруг игрока",
-  "seaofmemory.configuration.spawnChance": "Шанс появления"
+  "seaofmemory.configuration.spawnChance": "Шанс появления",
+  "seaofmemory.overtime.start": "Время остановилось.",
+  "seaofmemory.overtime.end": "Мир выдохнул.",
+  "seaofmemory.overtime.no_sleep": "Эту ночь не проспать",
+  "commands.seaofmemory.overtime.active": "Овертайм идёт: осталось %s с",
+  "commands.seaofmemory.overtime.scheduled": "Следующий Овертайм наступит в день %s",
+  "seaofmemory.configuration.overtime": "Овертайм",
+  "seaofmemory.configuration.intervalDays": "Дней между",
+  "seaofmemory.configuration.durationTicks": "Длительность (тиков)"
 }

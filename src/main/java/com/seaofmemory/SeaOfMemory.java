@@ -8,6 +8,7 @@ import com.seaofmemory.beacon.FogBeaconBlock;
 import com.seaofmemory.cold.Cold;
 import com.seaofmemory.entity.ModEntities;
 import com.seaofmemory.fog.CognitiveFog;
+import com.seaofmemory.overtime.FrozenMobs;
 import com.seaofmemory.sea.Absorption;
 import com.seaofmemory.sea.MemoryDensityFunction;
 import com.seaofmemory.sea.MemoryImprint;
@@ -71,6 +72,7 @@ public class SeaOfMemory {
         Absorption.ATTACHMENT_TYPES.register(modEventBus);
         MemoryImprint.ATTACHMENT_TYPES.register(modEventBus);
         ModEntities.ENTITY_TYPES.register(modEventBus);
+        FrozenMobs.ATTACHMENT_TYPES.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.SERVER, Config.SPEC);
     }

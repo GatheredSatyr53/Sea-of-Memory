@@ -36,5 +36,13 @@
   "commands.seaofmemory.fog.lost.entry": "  %s at %s %s %s, %s blocks away",
   "seaofmemory.configuration.snowPeople": "Snow People",
   "seaofmemory.configuration.cap": "Cap Around a Player",
-  "seaofmemory.configuration.spawnChance": "Spawn Chance"
+  "seaofmemory.configuration.spawnChance": "Spawn Chance",
+  "seaofmemory.overtime.start": "Time stopped.",
+  "seaofmemory.overtime.end": "The world breathes out.",
+  "seaofmemory.overtime.no_sleep": "There is no night to sleep through",
+  "commands.seaofmemory.overtime.active": "Overtime is on: %s seconds left",
+  "commands.seaofmemory.overtime.scheduled": "The next Overtime falls on day %s",
+  "seaofmemory.configuration.overtime": "Overtime",
+  "seaofmemory.configuration.intervalDays": "Days Between",
+  "seaofmemory.configuration.durationTicks": "Duration (ticks)"
 }

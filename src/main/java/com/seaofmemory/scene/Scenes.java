@@ -6,6 +6,7 @@ import java.util.List;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.seaofmemory.SeaOfMemory;
+import com.seaofmemory.overtime.OvertimePayload;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -39,7 +40,9 @@ public final class Scenes {
     @SubscribeEvent
     static void onRegisterPayloads(RegisterPayloadHandlersEvent event) {
         // The client handler is registered separately on the client (see SilhouetteEffect).
-        event.registrar(NETWORK_VERSION).playToClient(SilhouettePayload.TYPE, SilhouettePayload.STREAM_CODEC);
+        event.registrar(NETWORK_VERSION)
+                .playToClient(SilhouettePayload.TYPE, SilhouettePayload.STREAM_CODEC)
+                .playToClient(OvertimePayload.TYPE, OvertimePayload.STREAM_CODEC);
     }
 
     /**

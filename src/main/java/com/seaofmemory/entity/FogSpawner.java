@@ -6,6 +6,7 @@ import java.util.function.Predicate;
 import com.seaofmemory.Config;
 import com.seaofmemory.SeaOfMemory;
 import com.seaofmemory.fog.CognitiveFog;
+import com.seaofmemory.overtime.Overtime;
 import com.seaofmemory.sea.FogWorld;
 
 import net.minecraft.core.BlockPos;
@@ -45,6 +46,8 @@ public final class FogSpawner {
     // How many snow people may gather around one player, and the chance per check that one more tries to rise,
     // live in the server config. A real crowd is for when something bigger stirs.
     public static final double CAP_RADIUS = 64;
+    // During the Overtime the crowd grows, and it rises faster.
+    private static final int OVERTIME_CROWD = 3;
     // Roughly one hare per ten minutes spent near a village in the fog world (a 1 in HARE_CHANCE roll every
     // HARE_INTERVAL ticks), never two close together. On its own timer, so tuning snow people leaves it alone.
     // Only there: its fight is played out in silhouettes, and those only show in the fog reality.
@@ -113,7 +116,9 @@ public final class FogSpawner {
     private static void spawnSnowPerson(ServerLevel level, ServerPlayer player) {
         AABB area = player.getBoundingBox().inflate(CAP_RADIUS);
         int nearby = level.getEntitiesOfClass(SnowPerson.class, area).size();
-        if (nearby < Config.SNOW_PEOPLE_CAP.getAsInt() && player.getRandom().nextDouble() < Config.SNOW_PEOPLE_SPAWN_CHANCE.getAsDouble()) {
+        int crowd = Overtime.isActive(level) ? OVERTIME_CROWD : 1;
+        double chance = Math.min(1.0, Config.SNOW_PEOPLE_SPAWN_CHANCE.getAsDouble() * crowd);
+        if (nearby < Config.SNOW_PEOPLE_CAP.getAsInt() * crowd && player.getRandom().nextDouble() < chance) {
             trySpawn(level, player, ModEntities.SNOW_PERSON.get(), 16, 32, pos -> true);
         }
     }

@@ -9,6 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelTargetBundle;
 import net.minecraft.client.renderer.PostChain;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -53,9 +54,10 @@ public final class SilhouetteEffect {
     @SubscribeEvent
     static void onAfterLevel(RenderLevelStageEvent.AfterLevel event) {
         Minecraft minecraft = Minecraft.getInstance();
-        // A scene can stay on for a long time, but it only shows in the fog reality:
-        // in the real world it would switch on and off at every edge of a foggy chunk.
-        if (remaining == SilhouettePayload.OFF || minecraft.level == null || !FogWorld.is(minecraft.level)) {
+        // A scene can stay on for a long time, but it only shows in the fog reality or during the Overtime:
+        // in an ordinary real world night it would switch on and off at every edge of a foggy chunk.
+        if (remaining == SilhouettePayload.OFF || minecraft.level == null
+                || !(FogWorld.is(minecraft.level) || ClientOvertime.isActive() && minecraft.level.dimension() == Level.OVERWORLD)) {
             return;
         }
         // With a shaderpack the scene is the pack's job (see Sea-of-Memory-Shaders); two effects on top of each other fight.

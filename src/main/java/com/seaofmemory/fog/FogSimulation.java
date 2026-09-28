@@ -2,6 +2,7 @@ package com.seaofmemory.fog;
 
 import com.seaofmemory.Config;
 import com.seaofmemory.SeaOfMemory;
+import com.seaofmemory.overtime.Overtime;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -30,6 +31,8 @@ public final class FogSimulation {
     private static final float HUMIDITY_WEIGHT = 0.15f;
     private static final float NIGHT_BONUS = 0.2f;
     private static final float RAIN_BONUS = 0.25f;
+    // During the Overtime the fog comes closer everywhere: critical by the water, thick away from it.
+    private static final float OVERTIME_BONUS = 0.3f;
     // Surface samples per chunk axis when looking for water (4x4 grid).
     private static final int WATER_SAMPLES = 4;
 
@@ -101,6 +104,9 @@ public final class FogSimulation {
         }
         if (level.isRainingAt(surface)) {
             target += RAIN_BONUS;
+        }
+        if (Overtime.isActive(level)) {
+            target += OVERTIME_BONUS;
         }
         return Mth.clamp(target, 0f, MAX_NATURAL_DENSITY);
     }

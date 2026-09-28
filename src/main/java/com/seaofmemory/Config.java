@@ -47,6 +47,18 @@ public final class Config {
             .define("freezeDamage", true);
 
     static {
+        BUILDER.pop().push("overtime");
+    }
+
+    public static final ModConfigSpec.IntValue OVERTIME_INTERVAL_DAYS = BUILDER
+            .comment("In-game days between one Overtime and the next; it begins at midnight")
+            .defineInRange("intervalDays", 20, 1, 1000);
+
+    public static final ModConfigSpec.IntValue OVERTIME_DURATION_TICKS = BUILDER
+            .comment("How long the Overtime lasts, in ticks (24000 is a whole in-game day)")
+            .defineInRange("durationTicks", 24000, 20, 240000);
+
+    static {
         BUILDER.pop().push("snowPeople");
     }
 
