@@ -1,5 +1,6 @@
 package com.seaofmemory.entity;
 
+import com.seaofmemory.Config;
 import com.seaofmemory.cold.Cold;
 import com.seaofmemory.fog.CognitiveFog;
 
@@ -51,8 +52,6 @@ import java.util.EnumSet;
 public class SnowPerson extends Monster {
     private static final EntityDataAccessor<Boolean> DATA_CLIMBING = SynchedEntityData.defineId(SnowPerson.class, EntityDataSerializers.BOOLEAN);
 
-    // Below this fog density they start to melt; the fog world (0.6) keeps them whole.
-    private static final float MELT_BELOW = 0.55f;
     private static final float MELT_DAMAGE = 2f;
     private static final double GAZE_RANGE = 12;
     private static final float HIT_COLD = 8f;
@@ -167,11 +166,42 @@ public class SnowPerson extends Monster {
         }
     }
 
+    /**
+     * Projections only hold together in fog. Two levels, both in the server config:
+     * below the melting level they slowly melt, below the sweeping level they cannot exist at all and fall apart at once.
+     * Melting is warmth's doing, so where it is cold enough to snow they do not melt; the sweeping level holds everywhere.
+     */
     private void meltIfFogThins(ServerLevel level) {
-        if (CognitiveFog.densityAt(level, blockPosition()) < MELT_BELOW) {
+        if (CognitiveFog.densityAt(level, blockPosition()) < Config.SNOW_PEOPLE_SWEEP_BELOW.getAsDouble()) {
+            sweepAway(level);
+            return;
+        }
+        if (inThinFog(level) && !coldEnoughToKeep(level)) {
             level.sendParticles(ParticleTypes.FALLING_WATER, getX(), getY() + getBbHeight() * 0.6, getZ(), 6, 0.3, 0.5, 0.3, 0);
             hurtServer(level, damageSources().generic(), MELT_DAMAGE);
         }
+    }
+
+    /**
+     * Whether the fog around it is too thin to hold it together.
+     */
+    public boolean inThinFog(ServerLevel level) {
+        return CognitiveFog.densityAt(level, blockPosition()) < Config.SNOW_PEOPLE_MELT_BELOW.getAsDouble();
+    }
+
+    private boolean coldEnoughToKeep(ServerLevel level) {
+        BlockPos pos = blockPosition();
+        return level.getBiome(pos).value().coldEnoughToSnow(pos, level.getSeaLevel());
+    }
+
+    /**
+     * Swept off like snow from a ledge, as when the world breathes out after the long night:
+     * no cry, no fight, nothing left behind.
+     */
+    public void sweepAway(ServerLevel level) {
+        level.sendParticles(ParticleTypes.SNOWFLAKE, getX(), getY() + getBbHeight() / 2, getZ(), 30, 0.3, 0.6, 0.3, 0.02);
+        level.sendParticles(ParticleTypes.FALLING_WATER, getX(), getY() + getBbHeight() * 0.6, getZ(), 12, 0.3, 0.5, 0.3, 0);
+        discard();
     }
 
     @Override

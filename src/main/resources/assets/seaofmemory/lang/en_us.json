@@ -45,5 +45,7 @@
   "seaofmemory.configuration.overtime": "Overtime",
   "seaofmemory.configuration.intervalDays": "Days Between",
   "seaofmemory.configuration.durationTicks": "Duration (ticks)",
-  "block.seaofmemory.dtm_lamp": "Detransmogrifier Lamp"
+  "block.seaofmemory.dtm_lamp": "Detransmogrifier Lamp",
+  "seaofmemory.configuration.meltBelow": "Melting Level",
+  "seaofmemory.configuration.sweepBelow": "Sweeping Level"
 }

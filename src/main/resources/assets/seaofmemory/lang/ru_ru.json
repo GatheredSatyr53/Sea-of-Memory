@@ -45,5 +45,7 @@
   "seaofmemory.configuration.overtime": "Овертайм",
   "seaofmemory.configuration.intervalDays": "Дней между",
   "seaofmemory.configuration.durationTicks": "Длительность (тиков)",
-  "block.seaofmemory.dtm_lamp": "ДТМ-фонарь"
+  "block.seaofmemory.dtm_lamp": "ДТМ-фонарь",
+  "seaofmemory.configuration.meltBelow": "Уровень таяния",
+  "seaofmemory.configuration.sweepBelow": "Уровень сметания"
 }

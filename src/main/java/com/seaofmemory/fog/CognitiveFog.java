@@ -4,6 +4,7 @@ import java.util.function.Supplier;
 
 import com.mojang.serialization.Codec;
 import com.seaofmemory.SeaOfMemory;
+import com.seaofmemory.overtime.Overtime;
 import com.seaofmemory.sea.FogWorld;
 
 import net.minecraft.core.BlockPos;
@@ -24,6 +25,9 @@ public final class CognitiveFog {
     public static final float CRITICAL = 0.75f;
     // Inside the fog world the fog is everywhere, thick but just below critical.
     public static final float FOG_WORLD_DENSITY = 0.6f;
+    // During the Overtime the fog itself does not change: reality turns cognitive, and everything that answers to
+    // the fog feels it this much denser. The shift is gone the moment the Overtime ends, so nothing lingers after it.
+    public static final float OVERTIME_SHIFT = 0.3f;
 
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES = DeferredRegister.create(NeoForgeRegistries.Keys.ATTACHMENT_TYPES, SeaOfMemory.MODID);
 
@@ -42,10 +46,15 @@ public final class CognitiveFog {
     }
 
     /**
-     * Fog density at a position in any level, including the fog world.
+     * Fog density as everything in the game feels it at a position, in any level: the fog world's own,
+     * and during the Overtime the real world's fog shifted by {@link #OVERTIME_SHIFT}.
      */
     public static float densityAt(Level level, BlockPos pos) {
-        return FogWorld.is(level) ? FOG_WORLD_DENSITY : getDensity(level.getChunkAt(pos));
+        if (FogWorld.is(level)) {
+            return FOG_WORLD_DENSITY;
+        }
+        float density = getDensity(level.getChunkAt(pos));
+        return Overtime.isActive(level) ? Math.min(1f, density + OVERTIME_SHIFT) : density;
     }
 
     public static void setDensity(ChunkAccess chunk, float density) {

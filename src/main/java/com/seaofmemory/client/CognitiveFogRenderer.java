@@ -9,6 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.fog.FogData;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.material.FogType;
@@ -53,6 +54,9 @@ public final class CognitiveFogRenderer {
         }
         previousDensity = currentDensity;
         float target = FogWorld.is(level) ? CognitiveFog.FOG_WORLD_DENSITY : sampleDensity(level, minecraft.player.position());
+        if (ClientOvertime.isActive() && level.dimension() == Level.OVERWORLD) {
+            target = Math.min(1f, target + CognitiveFog.OVERTIME_SHIFT);
+        }
         // Being pulled into the fog closes it in completely.
         target += (1f - target) * Absorption.fraction(minecraft.player);
         currentDensity = Mth.approach(currentDensity, target, SMOOTHING_STEP);

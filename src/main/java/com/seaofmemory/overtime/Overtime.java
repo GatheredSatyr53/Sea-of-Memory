@@ -30,9 +30,13 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
  * "Овертайм": once every few in-game days, at midnight, the real world skips a day. Time stops and the sun
- * does not come back for a whole extra day; every living creature freezes into ice (see FrozenMobs); the fog comes closer and brings more
- * of the snow people with it. Nothing is to be won: the player only has to hold on, and keep the frozen
- * villagers from being broken, until the world breathes out again.
+ * does not come back for a whole extra day. Every living creature freezes into ice (see FrozenMobs).
+ * The fog itself stays as it was, but reality turns cognitive: everything feels the fog denser
+ * (see CognitiveFog), and more of the snow people rise. When it ends the shift is gone at once,
+ * and those left in thin fog melt or fall apart.
+ * <p>
+ * Nothing is to be won: the player only has to hold on, and keep the frozen villagers from being broken,
+ * until the world breathes out again.
  */
 @EventBusSubscriber(modid = SeaOfMemory.MODID)
 public final class Overtime extends SavedData {

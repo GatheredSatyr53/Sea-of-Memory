@@ -71,6 +71,14 @@ public final class Config {
                     FogSpawner.SNOW_PEOPLE_INTERVAL / 20))
             .defineInRange("spawnChance", 0.2, 0.0, 1.0);
 
+    public static final ModConfigSpec.DoubleValue SNOW_PEOPLE_MELT_BELOW = BUILDER
+            .comment("Fog density below which snow people slowly melt")
+            .defineInRange("meltBelow", 0.6, 0.0, 1.0);
+
+    public static final ModConfigSpec.DoubleValue SNOW_PEOPLE_SWEEP_BELOW = BUILDER
+            .comment("Fog density below which snow people cannot exist at all and fall apart at once, even during the Overtime")
+            .defineInRange("sweepBelow", 0.3, 0.0, 1.0);
+
     static final ModConfigSpec SPEC = BUILDER.pop().build();
 
     private Config() {
